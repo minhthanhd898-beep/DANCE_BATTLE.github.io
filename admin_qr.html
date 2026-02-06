@@ -136,7 +136,7 @@
   // ============================================================
 
   const { createClient } = supabase;
-  const _supabase = (SB_URL !== "https://htqlaedczmaezrlqmwft.supabase.co") ? createClient(SB_URL, SB_KEY) : null;
+  const _supabase = (SB_URL !== "YOUR_SUPABASE_URL_HERE") ? createClient(SB_URL, SB_KEY) : null;
 
   let appData = { players: [], audition: { finished: false, results: [] }, judgeCount: 3, rounds: [] };
   const ROUND_CONFIG = [{ idx: 0, tabId: 2, cn: '32强对决', en: 'TOP 32 BATTLE' },{ idx: 1, tabId: 3, cn: '16强对决', en: 'TOP 16 BATTLE' },{ idx: 2, tabId: 4, cn: '四分之一决赛', en: 'QUARTER FINALS' },{ idx: 3, tabId: 5, cn: '半决赛', en: 'SEMI FINALS' },{ idx: 4, tabId: 6, cn: '巅峰总决赛', en: 'THE FINAL BATTLE' }];
@@ -341,4 +341,5 @@
   function printWin(h){ const w=window.open(''); w.document.write(h); w.document.close(); setTimeout(()=>w.print(),500); }
 </script>
 </body>
+
 </html>
