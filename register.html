@@ -59,7 +59,7 @@
 
   // 初始化 Supabase
   const { createClient } = supabase;
-  const _supabase = (SB_URL !== "https://htqlaedczmaezrlqmwft.supabase.co") ? createClient(SB_URL, SB_KEY) : null;
+  const _supabase = (SB_URL !== "YOUR_SUPABASE_URL_HERE") ? createClient(SB_URL, SB_KEY) : null;
 
   async function submitToCloud() {
     const id = document.getElementById('pid').value.trim();
@@ -95,4 +95,5 @@
   }
 </script>
 </body>
+
 </html>
