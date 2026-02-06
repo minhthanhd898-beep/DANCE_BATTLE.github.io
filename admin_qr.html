@@ -11,69 +11,93 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-  :root { --cyan: #00f7ff; --pink: #ff0099; --lime: #ccff00; --yellow: #ffee00; --bg: #0f0f0f; }
-  body { background: var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill-opacity="0.05"><path d="M0 60 L60 0 H30 L0 30 Z" fill="white"/></svg>'); color: #eee; font-family: "Microsoft YaHei", sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
+  :root { --cyan: #00f7ff; --pink: #ff0099; --lime: #ccff00; --yellow: #ffee00; --bg: #0f0f0f; --font-head: 'Rubik Glitch', cursive; --font-body: 'Microsoft YaHei', sans-serif; }
+  body { background: var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill-opacity="0.05"><path d="M0 60 L60 0 H30 L0 30 Z" fill="white"/></svg>'); color: #eee; font-family: var(--font-body); margin: 0; padding: 20px; overflow-x: hidden; }
   
-  /* 基础 UI (简化版) */
+  /* --- 基础 UI --- */
   .container { max-width: 1300px; margin: 0 auto; background: rgba(20,20,20,0.95); border: 4px solid #fff; box-shadow: 10px 10px 0 #000; padding: 10px; }
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
-  h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
-  .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
-  .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); }
+  h1 { font-family: var(--font-head); font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
+  .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); flex-wrap: wrap; }
+  .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition: 0.2s; }
+  .tab:hover { background: #fff; color: #000; }
   .tab.active { background: var(--cyan); color: #000; border-color: #fff; transform: skewX(-15deg) scale(1.1); box-shadow: 0 0 15px var(--cyan); }
-  .panel { display: none; padding: 30px; min-height: 600px; }
-  .panel.active { display: block; animation: fadeIn 0.5s; }
+  
+  .panel { display: none; padding: 30px; min-height: 600px; animation: fadeIn 0.5s; }
+  .panel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   
-  /* 按钮 & 输入框 */
-  .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
-  .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
+  /* 状态栏 & 按钮 */
+  .status-bar { background: #000; padding: 15px; border: 2px solid #444; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; box-shadow: 4px 4px 0 #000; }
+  .btn:active { transform: skewX(-10deg) translate(2px,2px); box-shadow: 2px 2px 0 #000; }
   .btn-green { background: var(--lime); color: #000; }
   .btn-blue { background: var(--cyan); color: #000; }
   .btn-pink { background: var(--pink); color: #fff; }
-  input { background: transparent; border: 1px solid #555; color: #fff; padding: 5px; text-align: center; font-family: 'Black Ops One'; font-size: 18px; }
+  .btn-purple { background: #9c27b0; color: #fff; }
+  .btn-small { padding: 4px 10px; font-size: 12px; transform: none; background: #333; color: #fff; }
+
+  /* 输入框 & 表格 */
+  input { background: transparent; border: 1px solid #555; color: #fff; padding: 5px; text-align: center; font-family: 'Black Ops One'; font-size: 18px; width: 80px; }
+  input[type="text"] { width: 150px; text-align: left; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 5px; margin-top: 20px; }
+  th { font-family: 'Black Ops One'; color: #888; border-bottom: 2px solid #333; padding: 10px; }
+  td { background: #111; padding: 10px; text-align: center; border: 1px solid #222; }
+  .top-rank td { border-top: 1px dashed var(--cyan); border-bottom: 1px dashed var(--cyan); color: var(--cyan); }
   
-  /* 对战卡片 */
+  /* 头像 */
+  .avatar-tiny { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; vertical-align: middle; }
+  .avatar-md { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--cyan); object-fit: cover; margin-bottom: 5px; }
+
+  /* Battle Card */
   .battle-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 30px; }
   .match-card { background: #000; border: 2px solid #fff; padding: 10px; display: flex; align-items: center; justify-content: space-between; position: relative; }
-  .fighter { flex: 1; text-align: center; padding: 15px; cursor: pointer; transition: 0.3s; }
+  .match-header { position: absolute; top: 5px; left: 10px; font-size: 12px; color: #666; font-family: 'Black Ops One'; }
+  .match-tools { position: absolute; top: 5px; right: 10px; z-index: 10; }
+  .fighter { flex: 1; text-align: center; padding: 15px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
+  .fighter:hover { background: #111; }
   .fighter.winner { background: var(--cyan); color: #000 !important; transform: scale(1.05); z-index: 2; box-shadow: 0 0 20px var(--cyan); }
+  .fighter.winner img { border-color: #000; }
   .fighter.loser { opacity: 0.3; filter: grayscale(1); }
-  .fighter img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; margin-bottom: 5px; }
-  
-  /* --- 🏆 颁奖盛典大屏 (Ceremony Screen) --- */
+  .vs-icon { font-family: var(--font-head); font-size: 40px; color: var(--pink); margin: 0 10px; }
+
+  /* --- 📺 VS Screen (对战大屏) --- */
+  .vs-screen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: row; }
+  .vs-side { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+  .vs-side.left { background: linear-gradient(135deg, #111, #000); border-right: 5px solid var(--cyan); }
+  .vs-side.right { background: linear-gradient(225deg, #111, #000); border-left: 5px solid var(--pink); }
+  .vs-avatar-big { width: 300px; height: 300px; border-radius: 50%; border: 10px solid #fff; object-fit: cover; box-shadow: 0 0 50px rgba(255,255,255,0.2); margin-bottom: 30px; }
+  .vs-name { font-family: var(--font-head); font-size: 80px; color: #fff; text-transform: uppercase; margin: 0; line-height: 1; text-shadow: 5px 5px 0 #000; }
+  .vs-id { font-family: 'Black Ops One'; font-size: 40px; color: var(--yellow); background: #000; padding: 5px 20px; margin-top: 10px; transform: rotate(-2deg); }
+  .vs-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--font-head); font-size: 150px; color: #fff; text-shadow: 0 0 30px var(--pink); z-index: 10000; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.1);} }
+  .close-overlay { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; z-index: 10001; opacity: 0.5; }
+
+  /* --- 🏆 颁奖盛典 (Ceremony) --- */
   .ceremony-screen { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 50px; overflow: hidden; }
-  .ceremony-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 30%, #333 0%, #000 70%); opacity: 0.5; z-index: 0; }
-  
-  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 20px; z-index: 10; width: 100%; height: 70%; }
-  
-  /* 领奖台柱子 */
-  .rank-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; transition: 0.5s; transform: translateY(100%); animation: slideUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  .ceremony-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, #222 0%, #000 70%); z-index: 0; }
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 30px; z-index: 10; width: 100%; height: 70%; }
+  .rank-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; animation: slideUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; transform: translateY(100%); }
   .rank-col.first { animation-delay: 0.5s; z-index: 10; }
   .rank-col.second { animation-delay: 0.2s; z-index: 5; }
   .rank-col.third { animation-delay: 0s; z-index: 5; }
   @keyframes slideUp { to { transform: translateY(0); } }
-
-  .avatar-box { width: 180px; height: 180px; border: 8px solid #fff; border-radius: 50%; overflow: hidden; margin-bottom: -40px; position: relative; z-index: 20; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-  .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
-  .first .avatar-box { width: 260px; height: 260px; border-color: var(--yellow); box-shadow: 0 0 50px var(--yellow); }
-  
-  .info-box { text-align: center; background: #111; border: 3px solid #fff; padding: 50px 20px 20px 20px; width: 220px; position: relative; clip-path: polygon(0 20%, 100% 0, 100% 100%, 0% 100%); margin-top: -20px; }
-  .first .info-box { background: linear-gradient(180deg, #ffd700 0%, #b8860b 100%); border-color: #fff; width: 320px; height: 350px; padding-top: 80px; }
-  .second .info-box { background: linear-gradient(180deg, #c0c0c0 0%, #808080 100%); height: 280px; }
-  .third .info-box { background: linear-gradient(180deg, #cd7f32 0%, #8b4513 100%); height: 240px; }
-
-  .p-rank { font-family: 'Rubik Glitch'; font-size: 60px; color: rgba(0,0,0,0.3); position: absolute; bottom: 10px; right: 10px; line-height: 1; }
-  .p-name { font-family: 'Permanent Marker'; font-size: 30px; color: #fff; text-shadow: 2px 2px 0 #000; line-height: 1.2; }
-  .first .p-name { font-size: 50px; color: #000; text-shadow: none; }
-  .p-id { font-family: 'Black Ops One'; font-size: 18px; color: #fff; background: #000; padding: 2px 10px; display: inline-block; margin-top: 10px; transform: rotate(-3deg); }
-
-  .crown { position: absolute; top: -120px; left: 50%; transform: translateX(-50%) rotate(-10deg); font-size: 100px; animation: float 2s infinite ease-in-out; z-index: 30; }
+  .c-avatar { width: 180px; height: 180px; border: 8px solid #fff; border-radius: 50%; overflow: hidden; margin-bottom: -40px; position: relative; z-index: 20; background: #000; object-fit: cover; }
+  .first .c-avatar { width: 260px; height: 260px; border-color: var(--yellow); box-shadow: 0 0 50px var(--yellow); }
+  .info-box { text-align: center; background: #111; border: 3px solid #fff; padding: 50px 20px 20px 20px; width: 220px; position: relative; clip-path: polygon(0 15%, 100% 0, 100% 100%, 0% 100%); margin-top: -20px; }
+  .first .info-box { background: linear-gradient(180deg, #ffd700, #b8860b); border-color: #fff; width: 320px; height: 350px; padding-top: 80px; }
+  .second .info-box { background: linear-gradient(180deg, #c0c0c0, #808080); height: 280px; }
+  .third .info-box { background: linear-gradient(180deg, #cd7f32, #8b4513); height: 240px; }
+  .c-name { font-family: 'Permanent Marker'; font-size: 30px; color: #fff; text-shadow: 2px 2px 0 #000; line-height: 1.2; }
+  .first .c-name { font-size: 50px; color: #000; text-shadow: none; }
+  .c-rank { font-family: var(--font-head); font-size: 60px; color: rgba(0,0,0,0.3); position: absolute; bottom: 10px; right: 10px; }
+  .crown { position: absolute; top: -120px; left: 50%; transform: translateX(-50%) rotate(-10deg); font-size: 100px; animation: float 2s infinite; z-index: 30; }
   @keyframes float { 0%,100%{transform: translateX(-50%) rotate(-10deg) translateY(0);} 50%{transform: translateX(-50%) rotate(-10deg) translateY(-20px);} }
+  .ceremony-title { position: absolute; top: 50px; font-family: var(--font-head); font-size: 80px; color: #fff; text-shadow: 0 0 20px var(--pink); z-index: 5; width: 100%; text-align: center; }
 
-  .close-btn { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; z-index: 100; opacity: 0.5; }
-  .close-btn:hover { opacity: 1; }
-  .ceremony-title { position: absolute; top: 50px; font-family: 'Rubik Glitch'; font-size: 80px; color: #fff; text-shadow: 0 0 20px var(--pink); z-index: 5; width: 100%; text-align: center; }
+  /* Misc */
+  .qr-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; flex-direction: column; }
+  #qrcode { background: #fff; padding: 20px; border: 5px solid var(--lime); }
 </style>
 </head>
 <body>
@@ -94,45 +118,76 @@
     <div class="tab" onclick="switchTab(6)">FINAL</div>
   </div>
 
-  <!-- 面板 0-1 省略部分代码，逻辑保持不变，重点在下方 Battle -->
+  <!-- 0. 选手库 -->
   <div class="panel active" id="panel0">
-    <!-- 简化的选手管理界面 -->
-    <button class="btn btn-green" onclick="syncRegistration()">SYNC</button>
-    <button class="btn btn-blue" onclick="addPlayerRow()">ADD</button>
-    <span style="color:#fff; margin-left:20px;">TOTAL: <span id="totalCount">0</span></span>
-    <table style="width:100%; margin-top:20px;">
-        <tbody id="playerListBody"></tbody>
+    <div class="status-bar">
+      <span>TOTAL: <strong id="totalCount" style="color:var(--cyan)">0</strong></span>
+      <div>
+        <button class="btn btn-green" onclick="syncRegistration()">SYNC</button>
+        <button class="btn btn-blue" onclick="addPlayerRow()">ADD</button>
+        <button class="btn btn-purple" onclick="showQR()">QR</button>
+        <button class="btn" style="background:#222; color:#fff;" onclick="clearAll()">RESET</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>AVATAR</th><th>ID</th><th>NAME</th><th>ACTION</th></tr></thead>
+      <tbody id="playerListBody"></tbody>
     </table>
   </div>
 
+  <!-- 1. 海选 -->
   <div class="panel" id="panel1">
-    <!-- 简化的海选界面 -->
-    <button class="btn btn-blue" onclick="renderScoreTable(true)">RANK</button>
-    <button class="btn btn-green" onclick="finalizeAudition()">LOCK >></button>
-    <table style="width:100%; margin-top:20px;">
-        <thead id="scoreHeader"></thead>
-        <tbody id="scoreBody"></tbody>
-    </table>
+    <div class="status-bar">
+      <span>JUDGES: <input type="number" id="judgeCount" value="3" min="1" max="5" onchange="renderScoreTable(true)"></span>
+      <div>
+        <button class="btn btn-blue" onclick="renderScoreTable(true)">RANK</button>
+        <button class="btn btn-purple" onclick="exportAuditionPDF()">PDF</button>
+        <button class="btn btn-green" onclick="finalizeAudition()">LOCK >></button>
+      </div>
+    </div>
+    <p style="color:#666; font-size:12px;">* 不足32人将自动补 "BYE" (轮空位)</p>
+    <table><thead><tr id="scoreHeader"></tr></thead><tbody id="scoreBody"></tbody></table>
   </div>
 
   <!-- Battle Panels -->
   <div id="battlePanels"></div>
 </div>
 
-<!-- 🏆 颁奖盛典大屏 -->
+<!-- 📺 VS Screen -->
+<div id="vsScreen" class="vs-screen">
+  <div class="close-overlay" onclick="document.getElementById('vsScreen').style.display='none'">×</div>
+  <div class="vs-center">VS</div>
+  <div class="vs-side left">
+    <img id="vsAvatar1" class="vs-avatar-big" src="">
+    <h1 id="vsName1" class="vs-name">P1</h1>
+    <div id="vsId1" class="vs-id">001</div>
+  </div>
+  <div class="vs-side right">
+    <img id="vsAvatar2" class="vs-avatar-big" src="">
+    <h1 id="vsName2" class="vs-name">P2</h1>
+    <div id="vsId2" class="vs-id">002</div>
+  </div>
+</div>
+
+<!-- 🏆 Ceremony Screen -->
 <div id="ceremonyScreen" class="ceremony-screen">
-  <div class="close-btn" onclick="closeCeremony()">×</div>
+  <div class="close-overlay" onclick="document.getElementById('ceremonyScreen').style.display='none'">×</div>
   <div class="ceremony-bg"></div>
   <div class="ceremony-title">THE CHAMPIONS</div>
-  <div class="podium" id="podiumContent">
-    <!-- 动态生成 -->
-  </div>
+  <div class="podium" id="podiumContent"></div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="qr-modal">
+  <div id="qrcode"></div>
+  <p style="color:#fff; margin-top:20px;">SCAN TO JOIN</p>
+  <div class="close-overlay" onclick="document.getElementById('qrModal').style.display='none'" style="position:static; font-size:20px; margin-top:20px;">[ CLOSE ]</div>
 </div>
 
 <script>
   // ==================== ★★★ 配置区域 ★★★ ====================
-  const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co"; 
-  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";
+  const SB_URL = "YOUR_SUPABASE_URL_HERE"; 
+  const SB_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
   // ============================================================
 
   const { createClient } = supabase;
@@ -142,89 +197,24 @@
   let appData = { players: [], audition: { finished: false, results: [] }, judgeCount: 3, rounds: [] };
   const ROUND_CONFIG = [{ idx: 0, tabId: 2, n: 'TOP 32' },{ idx: 1, tabId: 3, n: 'TOP 16' },{ idx: 2, tabId: 4, n: 'TOP 8' },{ idx: 3, tabId: 5, n: 'SEMI' },{ idx: 4, tabId: 6, n: 'FINAL' }];
 
-  // 初始化
   window.onload = async () => {
     await loadFromCloud();
     createBattlePanelsHtml(); 
+    document.getElementById('judgeCount').value = appData.judgeCount || 3;
     renderPlayerManager(); renderScoreTable(false); refreshBattlePanels();
     if (_supabase) _supabase.channel('reg').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, () => syncRegistration()).subscribe();
   };
 
-  /* --- 颁奖盛典逻辑 (核心新增) --- */
-  function showCeremony() {
-      const finalRound = appData.rounds[4]; // 决赛
-      const semiRound = appData.rounds[3];  // 半决赛 (找季军)
-      if(!finalRound || !finalRound.matches[0].winnerId) { alert("决赛尚未结束！(Finish Final First)"); return; }
-
-      const m = finalRound.matches[0];
-      const champion = m.winnerId === m.p1.id ? m.p1 : m.p2;
-      const second = m.winnerId === m.p1.id ? m.p2 : m.p1;
-      
-      // 寻找季军 (半决赛输掉的两人)
-      let thirds = [];
-      if(semiRound) {
-          semiRound.matches.forEach(sm => {
-              const loser = sm.winnerId === sm.p1.id ? sm.p2 : sm.p1;
-              if(loser) thirds.push(loser);
-          });
-      }
-
-      const p = document.getElementById('podiumContent');
-      p.innerHTML = '';
-
-      // 2. 亚军 (左)
-      p.innerHTML += createRankHTML(second, 'second', '2ND');
-      
-      // 1. 冠军 (中)
-      p.innerHTML += createRankHTML(champion, 'first', 'WINNER');
-
-      // 3. 季军 (右，可能有2人并列)
-      thirds.forEach(t => {
-          p.innerHTML += createRankHTML(t, 'third', '3RD');
-      });
-
-      document.getElementById('ceremonyScreen').style.display = 'flex';
-      
-      // 🎉 播放庆祝特效
-      fireConfetti();
+  /* --- Cloud --- */
+  async function loadFromCloud() {
+      if(!_supabase) return;
+      const { data } = await _supabase.from('game_state').select('data').eq('id', 1).single();
+      if (data && data.data) { appData = data.data; if(!appData.audition.results) appData.audition.results = []; }
   }
-
-  function createRankHTML(player, rankClass, rankTitle) {
-      const av = player.avatar || DEFAULT_AVATAR;
-      const crown = rankClass === 'first' ? '<div class="crown">👑</div>' : '';
-      return `
-        <div class="rank-col ${rankClass}">
-            ${crown}
-            <div class="avatar-box"><img src="${av}"></div>
-            <div class="info-box">
-                <div class="p-name">${player.name}</div>
-                <div class="p-id">#${player.id}</div>
-                <div class="p-rank">${rankTitle}</div>
-            </div>
-        </div>
-      `;
+  async function saveToCloud() {
+      if(!_supabase) return;
+      await _supabase.from('game_state').upsert({ id: 1, data: appData });
   }
-
-  function fireConfetti() {
-      var duration = 5 * 1000;
-      var animationEnd = Date.now() + duration;
-      var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
-
-      var interval = setInterval(function() {
-        var timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
-        var particleCount = 50 * (timeLeft / duration);
-        // 随机位置喷射
-        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-      }, 250);
-  }
-  function randomInRange(min, max) { return Math.random() * (max - min) + min; }
-  function closeCeremony() { document.getElementById('ceremonyScreen').style.display = 'none'; }
-
-  /* --- 原有逻辑保留 --- */
-  async function loadFromCloud() { if(!_supabase)return; const {data}=await _supabase.from('game_state').select('data').eq('id',1).single(); if(data) appData=data.data; if(!appData.audition.results) appData.audition.results=[]; }
-  async function saveToCloud() { if(!_supabase)return; await _supabase.from('game_state').upsert({id:1,data:appData}); }
   async function syncRegistration() {
       if(!_supabase) { alert("Config First!"); return; }
       const { data } = await _supabase.from('registrations').select('*').eq('processed', false);
@@ -235,19 +225,54 @@
       }
   }
   function refreshAllUI() { renderPlayerManager(); if(!appData.audition.finished) syncAuditionList(); renderScoreTable(false); refreshBattlePanels(); }
-  function switchTab(n) { document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
+
+  /* --- Player --- */
   function addPlayerRow() { appData.players.push({id:'',name:'',avatar:''}); renderPlayerManager(); saveToCloud(); }
-  function renderPlayerManager() { document.getElementById('playerListBody').innerHTML = appData.players.map((p,i)=>`<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" style="width:30px;height:30px;border-radius:50%"></td><td><input oninput="appData.players[${i}].id=this.value;saveToCloud()" value="${p.id}"></td><td><input oninput="appData.players[${i}].name=this.value;saveToCloud()" value="${p.name}"></td><td>X</td></tr>`).join(''); }
-  function syncAuditionList() { if(appData.audition.finished)return; const map={}; appData.audition.results.forEach(r=>map[r.id]=r.scores); appData.audition.results=appData.players.map(p=>({id:p.id,name:p.name,avatar:p.avatar,scores:map[p.id]||[],avg:0,rank:0})); }
-  function renderScoreTable(sort) { 
-      let l=[...appData.audition.results];
-      if(sort||appData.audition.finished){ l.forEach(p=>{let s=0,c=0;p.scores.forEach(v=>{if(v){s+=parseFloat(v);c++}});p.avg=c?s/c:0;}); l.sort((a,b)=>b.avg-a.avg); l.forEach((p,i)=>p.rank=i+1); if(appData.audition.finished)appData.audition.results=l;}
-      document.getElementById('scoreBody').innerHTML = l.map(p=>`<tr ${p.rank<=32?'style="background:#222"':''}><td>${p.rank}</td><td>${p.id}</td><td>${p.name}</td><td>${Number(p.avg).toFixed(2)}</td></tr>`).join('');
+  function renderPlayerManager() {
+    document.getElementById('playerListBody').innerHTML = appData.players.map((p,i)=>`<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-tiny"></td><td><input oninput="appData.players[${i}].id=this.value;saveToCloud()" value="${p.id}"></td><td><input style="width:100%;text-align:left;" oninput="appData.players[${i}].name=this.value;saveToCloud()" value="${p.name}"></td><td><button class="btn-small" onclick="delPlayer(${i})">X</button></td></tr>`).join('');
+    document.getElementById('totalCount').innerText = appData.players.length;
   }
-  function finalizeAudition() { if(!confirm('Lock?'))return; appData.audition.finished=true; const seed=[[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]]; appData.rounds[0]={matches:seed.map((p,i)=>({id:i+1,p1:appData.audition.results[p[0]-1],p2:appData.audition.results[p[1]-1],winnerId:null}))}; saveToCloud(); refreshAllUI(); switchTab(2); }
+  function delPlayer(i) { if(confirm('Delete?')) { appData.players.splice(i,1); saveToCloud(); refreshAllUI(); } }
+
+  /* --- Audition --- */
+  function syncAuditionList() {
+      if(appData.audition.finished) return;
+      const map={}; appData.audition.results.forEach(r=>map[r.id]=r.scores);
+      appData.audition.results=appData.players.map(p=>({id:p.id,name:p.name,avatar:p.avatar,scores:map[p.id]||[],avg:0,rank:0}));
+  }
+  function renderScoreTable(sort) {
+      const j=parseInt(document.getElementById('judgeCount').value)||3; appData.judgeCount=j;
+      document.getElementById('scoreHeader').innerHTML = `<th>AVATAR</th><th>RANK</th><th>ID</th><th>NAME</th><th>AVG</th>${Array(j).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('')}`;
+      let l=[...appData.audition.results];
+      l.forEach(p=>{let s=0,c=0;p.scores.forEach(v=>{if(v){s+=parseFloat(v);c++}});p.avg=c?s/c:0;});
+      if(sort||appData.audition.finished){ l.sort((a,b)=>b.avg-a.avg); l.forEach((p,i)=>p.rank=i+1); if(appData.audition.finished)appData.audition.results=l;}
+      document.getElementById('scoreBody').innerHTML = l.map(p=>`<tr ${p.rank<=32?'class="top-rank"':''}><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-tiny"></td><td>${p.rank||'-'}</td><td>${p.id}</td><td>${p.name}</td><td>${Number(p.avg).toFixed(2)}</td>${Array(j).fill(0).map((_,i)=>`<td><input type="number" value="${p.scores[i]||''}" ${appData.audition.finished?'disabled':''} oninput="scoreIn('${p.id}',${i},this.value)"></td>`).join('')}</tr>`).join('');
+  }
+  function scoreIn(id,idx,val){ const p=appData.audition.results.find(x=>x.id===id); if(p){p.scores[idx]=val;saveToCloud();} }
   
+  // 核心：轮空补位逻辑
+  function finalizeAudition() {
+      if(appData.audition.finished){alert('LOCKED');return;}
+      renderScoreTable(true);
+      let top32 = appData.audition.results.slice(0,32);
+      if(top32.length < 32) {
+          const needed = 32 - top32.length;
+          if(!confirm(`Only ${top32.length} players. Auto-fill ${needed} BYEs?`)) return;
+          for(let i=0; i<needed; i++) top32.push({id:'BYE',name:'BYE (轮空)',avatar:DEFAULT_AVATAR,isBye:true});
+      } else {
+          if(!confirm('Lock & Start?')) return;
+      }
+      appData.audition.finished=true;
+      const seed=[[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
+      appData.rounds[0]={matches:seed.map((p,i)=>({id:i+1,p1:top32[p[0]-1],p2:top32[p[1]-1],winnerId:null}))};
+      // 自动判BYE
+      appData.rounds[0].matches.forEach(m=>{ if(m.p2.isBye)m.winnerId=m.p1.id; if(m.p1.isBye)m.winnerId=m.p2.id; });
+      saveToCloud(); refreshAllUI(); switchTab(2);
+  }
+
+  /* --- Battle --- */
   function createBattlePanelsHtml() {
-      document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`<div id="panel${cfg.tabId}" class="panel"><h3>${cfg.n}</h3><button class="btn btn-green" id="btnNext${cfg.idx}" onclick="nextRound(${cfg.idx})">NEXT</button>${cfg.idx===4?'<button class="btn btn-pink" onclick="showCeremony()" style="margin-left:20px;">🏆 SHOW CEREMONY</button>':''}<div class="battle-container" id="matchesContainer${cfg.idx}"></div></div>`).join('');
+      document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`<div id="panel${cfg.tabId}" class="panel"><h3>${cfg.n}</h3><button class="btn btn-purple" onclick="exportBattlePdf(${cfg.idx})">PDF</button><button class="btn btn-green" id="btnNext${cfg.idx}" onclick="nextRound(${cfg.idx})">NEXT >></button>${cfg.idx===4?'<button class="btn btn-pink" onclick="showCeremony()" style="margin-left:20px;">🏆 CEREMONY</button>':''}<div class="battle-container" id="matchesContainer${cfg.idx}"></div></div>`).join('');
   }
   function refreshBattlePanels() {
       appData.rounds.forEach((rnd,idx)=>{
@@ -256,15 +281,53 @@
           rnd.matches.forEach(m=>{
               const av1=m.p1.avatar||DEFAULT_AVATAR, av2=m.p2.avatar||DEFAULT_AVATAR;
               const w1=m.winnerId===m.p1.id?'winner':'', w2=m.winnerId===m.p2.id?'winner':'';
-              c.innerHTML+=`<div class="match-card"><div class="fighter ${w1}" onclick="setWin(${idx},${m.id-1},'${m.p1.id}')"><img src="${av1}"><br>${m.p1.name}</div><div style="font-family:'Rubik Glitch';font-size:30px;color:var(--pink)">VS</div><div class="fighter ${w2}" onclick="setWin(${idx},${m.id-1},'${m.p2.id}')"><img src="${av2}"><br>${m.p2.name}</div></div>`;
+              c.innerHTML+=`
+              <div class="match-card">
+                <div class="match-header">MATCH ${m.id}</div>
+                <div class="match-tools"><button class="btn-small btn-purple" onclick="openVSScreen('${m.p1.name}','${m.p1.id}','${av1}','${m.p2.name}','${m.p2.id}','${av2}')">📺 VS</button></div>
+                <div class="fighter ${w1}" onclick="setWin(${idx},${m.id-1},'${m.p1.id}')"><img src="${av1}" class="avatar-md"><br>${m.p1.name}</div>
+                <div class="vs-icon">VS</div>
+                <div class="fighter ${w2}" onclick="setWin(${idx},${m.id-1},'${m.p2.id}')"><img src="${av2}" class="avatar-md"><br>${m.p2.name}</div>
+              </div>`;
           });
+          const btn=document.getElementById(`btnNext${idx}`);
+          if(btn){ if(appData.rounds[idx+1]){btn.innerText='DONE';btn.disabled=true;btn.style.background='#333';}else{btn.disabled=!rnd.matches.every(m=>m.winnerId);} }
       });
   }
   function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId=w; saveToCloud(); refreshBattlePanels(); }
-  function nextRound(c){ if(!confirm('Next?'))return; const cur=appData.rounds[c].matches, next=[]; for(let i=0;i<cur.length;i+=2) next.push({id:i/2+1,p1:getId(cur[i]),p2:getId(cur[i+1]),winnerId:null}); appData.rounds[c+1]={matches:next}; saveToCloud(); refreshAllUI(); switchTab(c+3); }
+  function nextRound(c){ if(!confirm('Next?'))return; const cur=appData.rounds[c].matches, next=[]; for(let i=0;i<cur.length;i+=2) next.push({id:i/2+1,p1:getId(cur[i]),p2:getId(cur[i+1]),winnerId:null}); appData.rounds[c+1]={matches:next}; appData.rounds[c+1].matches.forEach(m=>{if(m.p2.isBye)m.winnerId=m.p1.id;if(m.p1.isBye)m.winnerId=m.p2.id;}); saveToCloud(); refreshAllUI(); switchTab(c+3); }
   function getId(m){return m.winnerId===m.p1.id?m.p1:m.p2;}
-  function clearAll(){ if(confirm('RESET?')){ appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]}; saveToCloud(); refreshAllUI(); } }
+
+  /* --- 大屏 & 颁奖 --- */
+  function openVSScreen(n1,i1,a1,n2,i2,a2) {
+      document.getElementById('vsName1').innerText=n1; document.getElementById('vsId1').innerText=i1; document.getElementById('vsAvatar1').src=a1;
+      document.getElementById('vsName2').innerText=n2; document.getElementById('vsId2').innerText=i2; document.getElementById('vsAvatar2').src=a2;
+      document.getElementById('vsScreen').style.display='flex';
+  }
+  function showCeremony() {
+      const f=appData.rounds[4], s=appData.rounds[3]; if(!f||!f.matches[0].winnerId){alert("Finish Final First!");return;}
+      const m=f.matches[0], win=m.winnerId===m.p1.id?m.p1:m.p2, sec=m.winnerId===m.p1.id?m.p2:m.p1, thirds=[];
+      if(s) s.matches.forEach(sm=>{ const l=sm.winnerId===sm.p1.id?sm.p2:sm.p1; if(l)thirds.push(l); });
+      const p=document.getElementById('podiumContent'); p.innerHTML=getRankHTML(sec,'second','2ND')+getRankHTML(win,'first','WINNER'); thirds.forEach(t=>p.innerHTML+=getRankHTML(t,'third','3RD'));
+      document.getElementById('ceremonyScreen').style.display='flex';
+      fireConfetti();
+  }
+  function getRankHTML(p,cls,ti) { return `<div class="rank-col ${cls}">${cls==='first'?'<div class="crown">👑</div>':''}<img src="${p.avatar||DEFAULT_AVATAR}" class="c-avatar"><div class="info-box"><div class="c-name">${p.name}</div><div class="c-rank">${ti}</div></div></div>`; }
+  function fireConfetti() { var d=5*1000,e=Date.now()+d; (function f(){ if(Date.now()>e)return; confetti({particleCount:50,spread:160,origin:{y:0.6}}); requestAnimationFrame(f); })(); }
+
+  /* --- Utils --- */
+  function switchTab(n) { document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
+  function clearAll() { if(confirm('RESET?')){ appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]}; saveToCloud(); refreshAllUI(); } }
+  function showQR() { const u=prompt("Register URL:",window.location.href.replace('admin_qr.html','register.html')); if(u){document.getElementById('qrcode').innerHTML="";new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256});document.getElementById('qrModal').style.display='flex';} }
+  
+  function exportAuditionPDF(){ 
+      const j=appData.judgeCount; let l=[...appData.audition.results];
+      if(!appData.audition.finished){l.sort((a,b)=>b.avg-a.avg);l.forEach((p,i)=>p.rank=i+1);}
+      let r=l.map(p=>`<tr ${p.rank<=32?'style="background:#eee"':''}><td>${p.rank}</td><td>${p.id}</td><td>${p.name}</td><td>${p.avg.toFixed(2)}</td><td>${p.rank<=32?'PASS':''}</td></tr>`).join('');
+      printWin(`<h1>AUDITION</h1><table border="1" width="100%">${r}</table>`); 
+  }
+  function exportBattlePdf(r){ let h=`<h1>ROUND ${r}</h1>`; appData.rounds[r].matches.forEach(m=>h+=`<p>${m.p1.name} vs ${m.p2.name} => ${m.winnerId}</p>`); printWin(h); }
+  function printWin(h){ const w=window.open(''); w.document.write(h); w.document.close(); setTimeout(()=>w.print(),500); }
 </script>
 </body>
 </html>
-
