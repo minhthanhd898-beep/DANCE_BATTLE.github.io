@@ -4,19 +4,16 @@
 <meta charset="UTF-8">
 <title>STREET WARS 2025 - ADMIN CONTROL</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- 字体 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Permanent+Marker&family=Rock+Salt&family=Rubik+Glitch&display=swap" rel="stylesheet">
-<!-- PDF & QRCode -->
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-  /* --- 保持完整的 Hip-Hop 样式 --- */
-  :root { --spray-cyan: #00f7ff; --spray-pink: #ff0099; --spray-lime: #b6e000; --spray-yellow: #ffb300; --font-graffiti: "Permanent Marker", cursive; --font-stencil: "Black Ops One", cursive; --font-glitch: "Rubik Glitch", cursive; --font-tag: "Rock Salt", cursive; --font-cn: "Microsoft YaHei", sans-serif; }
+  /* --- 保持原有的嘻哈 CSS --- */
+  :root { --spray-cyan: #00f7ff; --spray-pink: #ff0099; --spray-lime: #b6e000; --spray-yellow: #ffb300; --brick-dark: #0f0f0f; --font-graffiti: "Permanent Marker", cursive; --font-stencil: "Black Ops One", cursive; --font-glitch: "Rubik Glitch", cursive; --font-tag: "Rock Salt", cursive; --font-cn: "Microsoft YaHei", sans-serif; }
   body { background-color: #111; background-image: linear-gradient(335deg, rgba(0,0,0,0.8) 23px, transparent 23px), linear-gradient(155deg, rgba(0,0,0,0.8) 23px, transparent 23px); background-size: 58px 58px; color: #eee; font-family: var(--font-cn); margin: 0; padding: 20px; }
   .container { max-width: 1300px; margin: 0 auto; background: rgba(20, 20, 20, 0.95); border: 4px solid #fff; box-shadow: 10px 10px 0px #000; padding: 10px; clip-path: polygon(0% 5px, 5px 0%, 99% 0%, 100% 5px, 100% 99%, 99% 100%, 0% 100%); }
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--spray-pink); }
@@ -82,7 +79,6 @@
     <div class="tab" onclick="switchTab(6)">6. 总决赛<span class="en-sub">THE FINAL</span></div>
   </div>
 
-  <!-- 面板0：选手管理 -->
   <div class="panel active" id="panel0">
     <div class="status-bar">
       <div style="display:flex; align-items:center;">
@@ -106,7 +102,6 @@
     </table>
   </div>
 
-  <!-- 其他面板 -->
   <div class="panel" id="panel1">
     <div class="status-bar">
       <span><strong style="font-size:18px;">裁判数量</strong> <span class="en-sub" style="display:inline;">JUDGES</span> <input type="number" id="judgeCount" value="3" min="1" max="5" style="width:60px; margin-left:10px;" onchange="renderScoreTable(true)"></span>
@@ -124,13 +119,12 @@
 <div id="qrModal" class="qr-modal">
   <div id="qrcode"></div>
   <p style="color:#fff; margin-top:20px; font-family:var(--font-stencil); font-size:20px;">SCAN TO REGISTER</p>
-  <p style="color:#aaa; font-size:14px;">确保报名端(register.html)已部署上线</p>
   <div class="qr-close" onclick="document.getElementById('qrModal').style.display='none'">[ CLOSE ]</div>
 </div>
 
 <script>
   // ==================== ★★★ 配置区域 ★★★ ====================
-  // 在 Supabase 控制台获取，并替换下方字符串
+  // 请替换为你的真实 Key，不要留空格
   const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co"; 
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";
   // ============================================================
@@ -141,21 +135,35 @@
   let appData = { players: [], audition: { finished: false, results: [] }, judgeCount: 3, rounds: [] };
   const ROUND_CONFIG = [{ idx: 0, tabId: 2, cn: '32强对决', en: 'TOP 32 BATTLE' },{ idx: 1, tabId: 3, cn: '16强对决', en: 'TOP 16 BATTLE' },{ idx: 2, tabId: 4, cn: '四分之一决赛', en: 'QUARTER FINALS' },{ idx: 3, tabId: 5, cn: '半决赛', en: 'SEMI FINALS' },{ idx: 4, tabId: 6, cn: '巅峰总决赛', en: 'THE FINAL BATTLE' }];
 
-  // 初始化
-  window.onload = async () => {
-    await loadFromCloud(); // 启动时拉取云端数据
-    createBattlePanelsHtml(); 
-    document.getElementById('judgeCount').value = appData.judgeCount || 3;
-    renderPlayerManager();
-    renderScoreTable(false); 
-    refreshBattlePanels();
-     /* --- 云端同步核心 --- */
-  // 同步报名表数据到选手库
+  // 1. 定义所有函数 (Function Definitions)
+  // 必须放在 window.onload 之前，确保全局可用
+
+  async function loadFromCloud() {
+      if(!_supabase) return;
+      const { data, error } = await _supabase.from('game_state').select('data').eq('id', 1).single();
+      if (data && data.data) {
+          const cloud = data.data;
+          // 覆盖并补全结构
+          appData = {
+              players: cloud.players || [],
+              audition: cloud.audition || { finished: false, results: [] },
+              judgeCount: cloud.judgeCount || 3,
+              rounds: cloud.rounds || []
+          };
+          if (!appData.audition.results) appData.audition.results = [];
+          console.log("Cloud loaded:", appData);
+      }
+  }
+
+  async function saveToCloud() {
+      if(!_supabase) return;
+      await _supabase.from('game_state').upsert({ id: 1, data: appData });
+  }
+
   async function syncRegistration() {
       if(!_supabase) { alert("Configure Supabase first!"); return; }
-      
       const { data, error } = await _supabase.from('registrations').select('*').eq('processed', false);
-      if(error) { console.error(error); return; }
+      if(error) { console.error(error); alert("Error:"+error.message); return; }
       
       if(data && data.length > 0) {
           let count = 0;
@@ -165,103 +173,25 @@
                   count++;
               }
           });
-          
-          // 标记为已处理
           const ids = data.map(d => d.id);
           await _supabase.from('registrations').update({ processed: true }).in('id', ids);
-          
           if(count > 0) {
-              alert(`Synced ${count} new players!`);
+              alert(`成功同步 ${count} 位新选手！`);
               saveToCloud();
               refreshAllUI();
+          } else {
+              alert("有新数据，但ID已存在 (重复)");
           }
       } else {
-          alert("No new registrations found.");
+          alert("暂无新报名 (No new players)");
       }
   }
 
-    // 开启实时监听 (当其他管理员修改了数据，或者有新报名)
-    if (_supabase) {
-        document.getElementById('syncStatus').classList.add('sync-active');
-        
-        // 监听报名表
-        _supabase.channel('registrations_channel')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, payload => {
-            // 当有新报名时，自动处理
-            console.log('New player registered!', payload.new);
-            // 可以在这里加个小红点提示，或者直接自动同步
-            syncRegistration(); 
-        })
-        .subscribe();
-
-        // 监听比赛主数据表 (用于多管理员同步)
-        _supabase.channel('gamestate_channel')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' }, payload => {
-            console.log('Game state updated by another admin');
-            appData = payload.new.data; // 更新本地数据
-            refreshAllUI();
-        })
-        .subscribe();
-    }
-  };
-
-  // 同步报名表数据到选手库
-async function loadFromCloud() {
-    if(!_supabase) return;
-    
-    // 读取 game_state 表 ID=1 的数据
-    const { data, error } = await _supabase.from('game_state').select('data').eq('id', 1).single();
-    
-    if (error) {
-        console.error("读取出错:", error);
-        return;
-    }
-
-    if (data && data.data) {
-        // 获取云端数据
-        const cloudData = data.data;
-
-        // 【关键修复】只有当云端数据包含有效结构时，才覆盖本地数据
-        // 或者，如果覆盖了，必须检查并补全缺失的字段
-        
-        // 1. 尝试覆盖
-        if (Object.keys(cloudData).length > 0) {
-            appData = cloudData;
-        }
-
-        // 2. 【安全气囊】补全可能缺失的字段 (防止报错的核心)
-        if (!appData.players) appData.players = [];
-        
-        // 修复 audition 报错
-        if (!appData.audition) {
-            appData.audition = { finished: false, results: [] };
-        } else if (!appData.audition.results) {
-            appData.audition.results = [];
-        }
-
-        if (!appData.rounds) appData.rounds = [];
-        if (!appData.judgeCount) appData.judgeCount = 3;
-
-        console.log("云端数据加载完成:", appData);
-    }
-}
-
-  /* --- 界面与逻辑 --- */
   function refreshAllUI() {
       renderPlayerManager();
       if(!appData.audition.finished) syncAuditionList();
       renderScoreTable(false);
       refreshBattlePanels();
-  }
-
-  function showQR() {
-    const defaultUrl = window.location.href.replace('admin_qr.html', 'register.html'); // 默认尝试同目录
-    const url = prompt("Please enter the URL of register.html:", defaultUrl);
-    if(url) {
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById('qrcode'), { text: url, width: 256, height: 256 });
-        document.getElementById('qrModal').style.display = 'flex';
-    }
   }
 
   // 选手管理
@@ -271,7 +201,7 @@ async function loadFromCloud() {
     const tbody = document.getElementById('playerListBody'); tbody.innerHTML = '';
     appData.players.forEach((p, idx) => {
         if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
-        tbody.innerHTML += `<tr><td style="color:#666">${idx+1}</td><td><input type="text" value="${p.id}" oninput="appData.players[${idx}].id=this.value;saveToCloud();" style="color:var(--spray-cyan)"></td><td><input type="text" value="${p.name}" style="width:100%;text-align:left;" oninput="appData.players[${idx}].name=this.value;saveToCloud();"></td><td><button class="btn-small" onclick="delPlayer(${idx})">DEL</button></td></tr>`;
+        tbody.innerHTML += `<tr><td style="color:#666; font-family:var(--font-stencil)">${idx+1}</td><td><input type="text" value="${p.id}" oninput="appData.players[${idx}].id=this.value;saveToCloud();" style="color:var(--spray-cyan)"></td><td><input type="text" value="${p.name}" style="width:100%;text-align:left;" oninput="appData.players[${idx}].name=this.value;saveToCloud();"></td><td><button class="btn-small" onclick="delPlayer(${idx})">DEL</button></td></tr>`;
     });
     document.getElementById('totalCount').innerText = appData.players.length;
   }
@@ -338,7 +268,7 @@ async function loadFromCloud() {
           }
       });
   }
-  function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId=(appData.rounds[r].matches[m].winnerId===w)?null:w; saveToCloud(); }
+  function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId=(appData.rounds[r].matches[m].winnerId===w)?null:w; saveToCloud(); refreshBattlePanels(); }
   function nextRound(c){
       if(!confirm('Next Round?'))return;
       const cur=appData.rounds[c].matches, next=[];
@@ -349,15 +279,34 @@ async function loadFromCloud() {
 
   function switchTab(n) { document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
   function clearAll() { if(confirm('RESET?')) { appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]}; saveToCloud(); refreshAllUI(); } }
+  function showQR() { const u=prompt("Input register.html URL:",window.location.href.replace('admin_qr.html','register.html')); if(u){document.getElementById('qrcode').innerHTML="";new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256});document.getElementById('qrModal').style.display='flex';} }
   
-  // PDF Functions (Simplified)
   function exportAuditionPDF(){ const j=appData.judgeCount; let l=[...appData.audition.results]; if(!appData.audition.finished){l.sort((a,b)=>b.avg-a.avg);l.forEach((p,i)=>p.rank=i+1);} let r=l.map(p=>`<tr><td>${p.rank}</td><td>${p.id}</td><td>${p.name}</td><td>${p.avg.toFixed(2)}</td><td>${p.rank<=32?'PASS':''}</td></tr>`).join(''); const h=`<h1>AUDITION</h1><table border="1" width="100%"><tr><th>RK</th><th>ID</th><th>NAME</th><th>AVG</th><th>ST</th></tr>${r}</table>`; printWin(h); }
   function exportBattlePdf(r){ let h=`<h1>ROUND ${r}</h1>`; appData.rounds[r].matches.forEach(m=>h+=`<p>M${m.id}: ${m.p1.name} vs ${m.p2.name} -> WIN: ${m.winnerId||'?'}</p>`); printWin(h); }
   function printWin(h){ const w=window.open(''); w.document.write(h); w.document.close(); setTimeout(()=>w.print(),500); }
+
+  // 2. 窗口加载逻辑
+  window.onload = async () => {
+    // 先加载数据
+    await loadFromCloud();
+    
+    // 初始化界面
+    createBattlePanelsHtml(); 
+    document.getElementById('judgeCount').value = appData.judgeCount || 3;
+    renderPlayerManager();
+    renderScoreTable(false); 
+    refreshBattlePanels();
+    
+    // 开启监听
+    if (_supabase) {
+        document.getElementById('syncStatus').classList.add('sync-active');
+        _supabase.channel('registrations_channel')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, payload => {
+            console.log('New player!', payload);
+            syncRegistration(); // 自动同步
+        }).subscribe();
+    }
+  };
 </script>
 </body>
-
 </html>
-
-
-
