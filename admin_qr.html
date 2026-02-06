@@ -202,34 +202,45 @@
   }
 
   // 同步报名表数据到选手库
-  async function syncRegistration() {
-      if(!_supabase) { alert("Configure Supabase first!"); return; }
-      
-      const { data, error } = await _supabase.from('registrations').select('*').eq('processed', false);
-      if(error) { console.error(error); return; }
-      
-      if(data && data.length > 0) {
-          let count = 0;
-          data.forEach(reg => {
-              if(!appData.players.some(p => p.id === reg.player_id)) {
-                  appData.players.push({ id: reg.player_id, name: reg.player_name });
-                  count++;
-              }
-          });
-          
-          // 标记为已处理
-          const ids = data.map(d => d.id);
-          await _supabase.from('registrations').update({ processed: true }).in('id', ids);
-          
-          if(count > 0) {
-              alert(`Synced ${count} new players!`);
-              saveToCloud();
-              refreshAllUI();
-          }
-      } else {
-          alert("No new registrations found.");
-      }
-  }
+async function loadFromCloud() {
+    if(!_supabase) return;
+    
+    // 读取 game_state 表 ID=1 的数据
+    const { data, error } = await _supabase.from('game_state').select('data').eq('id', 1).single();
+    
+    if (error) {
+        console.error("读取出错:", error);
+        return;
+    }
+
+    if (data && data.data) {
+        // 获取云端数据
+        const cloudData = data.data;
+
+        // 【关键修复】只有当云端数据包含有效结构时，才覆盖本地数据
+        // 或者，如果覆盖了，必须检查并补全缺失的字段
+        
+        // 1. 尝试覆盖
+        if (Object.keys(cloudData).length > 0) {
+            appData = cloudData;
+        }
+
+        // 2. 【安全气囊】补全可能缺失的字段 (防止报错的核心)
+        if (!appData.players) appData.players = [];
+        
+        // 修复 audition 报错
+        if (!appData.audition) {
+            appData.audition = { finished: false, results: [] };
+        } else if (!appData.audition.results) {
+            appData.audition.results = [];
+        }
+
+        if (!appData.rounds) appData.rounds = [];
+        if (!appData.judgeCount) appData.judgeCount = 3;
+
+        console.log("云端数据加载完成:", appData);
+    }
+}
 
   /* --- 界面与逻辑 --- */
   function refreshAllUI() {
@@ -343,3 +354,4 @@
 </body>
 
 </html>
+
