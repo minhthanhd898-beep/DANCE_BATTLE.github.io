@@ -2,519 +2,100 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>STREET WARS 2025 - 管理端 ADMIN</title>
+<title>STREET WARS 2025 - ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- 彩带特效库 -->
+<!-- 特效库 -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <!-- 字体 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Permanent+Marker&family=Rubik+Glitch&display=swap" rel="stylesheet">
-<!-- QRCode (报名二维码) -->
+<!-- 二维码库 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-:root {
-  --cyan:  #00f7ff;
-  --pink:  #ff0099;
-  --lime:  #ccff00;
-  --yellow:#ffeb3b;
-  --bg:    #0f0f0f;
-  --font-cn: "Microsoft YaHei", sans-serif;
-  --font-stencil: "Black Ops One", cursive;
-  --font-graffiti: "Permanent Marker", cursive;
-  --font-glitch: "Rubik Glitch", cursive;
-}
+  :root { --cyan: #00f7ff; --pink: #ff0099; --lime: #ccff00; --yellow: #ffee00; --bg: #0f0f0f; }
+  body { background: var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill-opacity="0.05"><path d="M0 60 L60 0 H30 L0 30 Z" fill="white"/></svg>'); color: #eee; font-family: "Microsoft YaHei", sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
+  
+  .container { max-width: 1300px; margin: 0 auto; background: rgba(20,20,20,0.95); border: 4px solid #fff; box-shadow: 10px 10px 0 #000; padding: 10px; min-height: 800px; }
+  header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
+  h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
+  
+  /* Tabs */
+  .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
+  .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition:0.3s; }
+  .tab:hover { background: #444; color: #fff; }
+  .tab.active { background: var(--cyan); color: #000; border-color: #fff; transform: skewX(-15deg) scale(1.1); box-shadow: 0 0 15px var(--cyan); }
+  
+  .panel { display: none; padding: 30px; animation: fadeIn 0.5s; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  
+  /* Buttons */
+  .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
+  .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
+  .btn-green { background: var(--lime); color: #000; }
+  .btn-blue { background: var(--cyan); color: #000; }
+  .btn-pink { background: var(--pink); color: #fff; }
+  .btn-dark { background: #333; color: #fff; }
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+  
+  input { background: transparent; border: 1px solid #555; color: #fff; padding: 5px; text-align: center; font-family: 'Black Ops One'; font-size: 18px; }
+  .status-bar { background: #000; border: 2px solid #444; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom:20px; }
+  
+  /* Table */
+  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+  th { color: #888; font-size: 14px; border-bottom: 2px solid #333; padding: 6px; }
+  td { background: #111; padding: 6px; border-top: 1px solid #222; border-bottom: 1px solid #222; vertical-align: middle; text-align: center; }
+  .avatar-sm { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
+  .top-rank td { border-top: 1px dashed var(--cyan); border-bottom: 1px dashed var(--cyan); background: rgba(0, 247, 255, 0.05); }
+  .rank-num { font-family: 'Rubik Glitch'; font-size: 20px; color: #777; }
+  .top-rank .rank-num { color: var(--cyan); text-shadow: 0 0 2px rgba(0,247,255,0.7); }
 
-body {
-  background: var(--bg);
-  background-image:
-    linear-gradient(335deg, rgba(255,255,255,0.05) 23px, transparent 23px),
-    linear-gradient(155deg, rgba(255,255,255,0.05) 23px, transparent 23px);
-  background-size: 58px 58px;
-  margin: 0;
-  padding: 20px;
-  font-family: var(--font-cn);
-  color: #eee;
-  overflow-x: hidden;
-}
+  /* Battle Cards */
+  .battle-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-top: 20px; }
+  .match-card { position: relative; background:#000; border:2px solid #fff; display:flex; align-items:center; justify-content:space-between; padding:10px; box-shadow:5px 5px 0 #000; }
+  .match-tools { position:absolute; top:5px; right:5px; z-index:10; }
+  .fighter { flex:1; text-align:center; padding:10px; cursor:pointer; transition:0.2s; display:flex; flex-direction:column; align-items:center; border: 1px solid transparent; }
+  .fighter:hover { border-color:#555; }
+  .fighter img { width:60px; height:60px; border-radius:50%; border:2px solid #fff; object-fit:cover; margin-bottom:5px; }
+  .fighter.winner { background:var(--cyan); color:#000 !important; box-shadow:0 0 15px var(--cyan); transform: scale(1.05); z-index:5; }
+  .fighter.loser { opacity:0.3; filter:grayscale(1); }
+  .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
-.container {
-  max-width: 1300px;
-  margin: 0 auto;
-  background: rgba(20,20,20,0.95);
-  border: 4px solid #fff;
-  box-shadow: 10px 10px 0 #000;
-  padding: 10px;
-  clip-path: polygon(0% 5px, 5px 0%, 99% 0%, 100% 5px, 100% 100%, 0 100%);
-}
+  /* Popups (Important: display:none by default) */
+  #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
+  
+  /* VS Screen */
+  #vsScreen { flex-direction: row; align-items: center; }
+  .vs-side { flex:1; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .vs-side.left { background:linear-gradient(135deg,#111,#000); border-right:5px solid var(--cyan); }
+  .vs-side.right { background:linear-gradient(225deg,#111,#000); border-left:5px solid var(--pink); }
+  .vs-avatar-big { width:300px; height:300px; border-radius:50%; border:10px solid #fff; object-fit:cover; margin-bottom:20px; }
+  .vs-name-big { font-family:'Rubik Glitch'; font-size:60px; color:#fff; text-shadow:3px 3px 0 #000; }
+  .vs-id-big { font-family:'Black Ops One'; font-size:32px; color:var(--yellow); background:#000; padding:4px 16px; margin-top:10px; }
+  .vs-center-logo { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-family:'Rubik Glitch'; font-size:140px; color:#fff; text-shadow:0 0 30px var(--pink); pointer-events:none; }
+  .close-btn { position:absolute; top:20px; right:20px; font-size:30px; color:#fff; cursor:pointer; opacity:0.6; z-index:10000; }
 
-header {
-  text-align: center;
-  padding: 30px;
-  border-bottom: 3px dashed var(--pink);
-}
-h1 {
-  margin: 0;
-  font-family: var(--font-glitch);
-  font-size: 50px;
-  color: #fff;
-  text-shadow: 4px 4px 0 var(--pink), -2px -2px 0 var(--cyan);
-  transform: rotate(-2deg);
-}
-header p {
-  margin: 5px 0 0;
-  font-family: var(--font-stencil);
-  color: var(--yellow);
-  letter-spacing: 2px;
-}
+  /* Ceremony */
+  #ceremonyScreen { flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:40px; }
+  .ceremony-bg { position:absolute; inset:0; background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.1) 0, #000 60%); z-index:-1; }
+  .ceremony-title { position:absolute; top:40px; font-family:'Rubik Glitch'; font-size:72px; color:#fff; text-shadow:0 0 25px var(--pink); }
+  .podium { display:flex; align-items:flex-end; gap:40px; z-index:10; }
+  .rank-col { display:flex; flex-direction:column; align-items:center; }
+  .avatar-box { width:180px; height:180px; border-radius:50%; border:8px solid #fff; overflow:hidden; margin-bottom:-40px; z-index:20; background:#000; }
+  .avatar-box img { width:100%; height:100%; object-fit:cover; }
+  .rank-col.first .avatar-box { width:260px; height:260px; border-color:var(--yellow); box-shadow:0 0 50px var(--yellow); }
+  .info-box { text-align:center; background:#111; border:3px solid #fff; padding:50px 20px 20px; width:220px; margin-top:-10px; clip-path:polygon(0 20%,100% 0,100% 100%,0 100%); }
+  .rank-col.first .info-box { width:300px; padding-top:80px; background:linear-gradient(180deg,#ffd700,#b8860b); }
+  .rank-col.second .info-box { background:linear-gradient(180deg,#c0c0c0,#808080); }
+  .rank-col.third .info-box { background:linear-gradient(180deg,#cd7f32,#8b4513); }
+  .crown { position:absolute; top:-100px; font-size:80px; animation:bounce 2s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
 
-/* Tabs */
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  padding: 15px 10px 0;
-  background: #000;
-  border-bottom: 4px solid var(--cyan);
-}
-.tab {
-  font-family: var(--font-cn);
-  font-weight: bold;
-  font-size: 14px;
-  padding: 8px 16px;
-  background: #222;
-  color: #aaa;
-  border: 2px solid #555;
-  transform: skewX(-15deg);
-  cursor: pointer;
-  transition: 0.2s;
-  box-shadow: 3px 3px 0 #000;
-}
-.tab.active {
-  background: var(--cyan);
-  color: #000;
-  border-color: #fff;
-  box-shadow: 0 0 15px var(--cyan);
-  transform: skewX(-15deg) scale(1.05);
-}
-
-/* Panels */
-.panel {
-  display: none;
-  padding: 25px;
-  background:
-    radial-gradient(circle at top right, rgba(0,247,255,0.12), transparent 40%),
-    radial-gradient(circle at bottom left, rgba(255,0,153,0.12), transparent 40%),
-    #111;
-  min-height: 600px;
-}
-.panel.active { display: block; }
-
-/* Buttons & Inputs */
-.btn {
-  font-family: var(--font-cn);
-  font-weight: bold;
-  border: none;
-  padding: 8px 18px;
-  margin: 4px;
-  cursor: pointer;
-  transform: skewX(-10deg);
-  box-shadow: 3px 3px 0 #000;
-  transition: 0.15s;
-}
-.btn:hover {
-  transform: skewX(-10deg) translate(-2px,-2px);
-  box-shadow: 5px 5px 0 #000;
-}
-.btn-blue { background: var(--cyan); color: #000; }
-.btn-pink { background: var(--pink); color: #fff; }
-.btn-green { background: var(--lime); color: #000; }
-.btn-dark { background: #333; color: #fff; }
-.btn-small { padding: 4px 10px; font-size: 12px;}
-
-input[type="text"], input[type="number"] {
-  background: transparent;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 4px 6px;
-  font-family: var(--font-stencil);
-  font-size: 16px;
-  text-align: center;
-}
-input:focus {
-  outline: none;
-  border-color: var(--pink);
-}
-
-/* Status bar */
-.status-bar {
-  background: #000;
-  border: 2px solid #444;
-  padding: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* search */
-.search-box {
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid var(--cyan);
-  color: var(--cyan);
-  padding: 4px 10px;
-  font-family: var(--font-graffiti);
-  font-size: 16px;
-  width: 200px;
-}
-
-/* table */
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 6px;
-  margin-top: 15px;
-}
-th {
-  color: #888;
-  font-size: 14px;
-  border-bottom: 2px solid #333;
-  padding: 6px;
-}
-td {
-  background: #111;
-  padding: 6px;
-  border-top: 1px solid #222;
-  border-bottom: 1px solid #222;
-}
-
-/* avatars */
-.avatar-sm {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  object-fit: cover;
-}
-
-/* audition */
-.rank-num {
-  font-family: var(--font-glitch);
-  font-size: 20px;
-  color: #777;
-}
-.top-rank td {
-  border-top: 1px dashed var(--cyan);
-  border-bottom: 1px dashed var(--cyan);
-}
-.top-rank .rank-num {
-  color: var(--cyan);
-  text-shadow: 0 0 2px rgba(0,247,255,0.7);
-}
-
-/* battle cards */
-.battle-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-.match-card {
-  position: relative;
-  background:#000;
-  border:2px solid #fff;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:8px;
-  box-shadow:5px 5px 0 #000;
-}
-.fighter {
-  flex:1;
-  text-align:center;
-  padding:12px 5px;
-  cursor:pointer;
-  transition:0.2s;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-.fighter img{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  border:2px solid #fff;
-  object-fit:cover;
-  margin-bottom:4px;
-}
-.fighter-name{font-family:var(--font-cn);font-size:16px;}
-.fighter-id{font-family:var(--font-stencil);font-size:12px;color:#aaa;}
-.fighter.winner{
-  background:var(--cyan);
-  color:#000;
-  box-shadow:0 0 15px var(--cyan);
-}
-.fighter.loser{opacity:0.35;filter:grayscale(1);}
-.vs-tag{
-  font-family:var(--font-glitch);
-  font-size:32px;
-  color:var(--pink);
-  margin:0 8px;
-}
-
-/* battle tools */
-.match-tools {
-  position:absolute;
-  top:4px;
-  right:4px;
-}
-
-/* VS Screen for单场对战背景 */
-#vsScreen {
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:9998;
-  background:#000;
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  justify-content:center;
-}
-.vs-side{
-  flex:1;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-}
-.vs-side.left {
-  background:linear-gradient(135deg,#111,#000);
-  border-right:5px solid var(--cyan);
-}
-.vs-side.right{
-  background:linear-gradient(225deg,#111,#000);
-  border-left:5px solid var(--pink);
-}
-.vs-avatar-big{
-  width:260px;
-  height:260px;
-  border-radius:50%;
-  border:10px solid #fff;
-  object-fit:cover;
-  box-shadow:0 0 40px rgba(0,0,0,0.8);
-  margin-bottom:20px;
-}
-.vs-name-big{
-  font-family:var(--font-glitch);
-  font-size:60px;
-  color:#fff;
-  text-shadow:3px 3px 0 #000;
-}
-.vs-id-big{
-  font-family:var(--font-stencil);
-  font-size:32px;
-  color:var(--yellow);
-  background:#000;
-  padding:4px 16px;
-  margin-top:10px;
-}
-.vs-center-logo{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  font-family:var(--font-glitch);
-  font-size:140px;
-  color:#fff;
-  text-shadow:0 0 30px var(--pink), 5px 5px 0 #000;
-  pointer-events:none;
-}
-.vs-close-btn{
-  position:absolute;
-  top:20px;
-  right:20px;
-  font-size:26px;
-  color:#fff;
-  cursor:pointer;
-  opacity:0.6;
-}
-
-/* === 🏆 颁奖典礼全屏界面 === */
-.ceremony-screen {
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:9999;
-  background:#000;
-  font-family:var(--font-cn);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-end;
-  padding-bottom:40px;
-  overflow:hidden;
-}
-.ceremony-bg{
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(255,255,255,0.08) 0, transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(0,247,255,0.15) 0, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(255,0,153,0.15) 0, transparent 50%),
-    #000;
-  opacity:0.9;
-}
-.ceremony-title{
-  position:absolute;
-  top:40px;
-  width:100%;
-  text-align:center;
-  font-family:var(--font-glitch);
-  font-size:72px;
-  color:#fff;
-  text-shadow:0 0 25px var(--pink),4px 4px 0 #000;
-  letter-spacing:4px;
-  z-index:5;
-}
-.ceremony-close{
-  position:absolute;
-  top:20px;
-  right:25px;
-  font-size:30px;
-  color:#fff;
-  cursor:pointer;
-  z-index:30;
-  opacity:0.5;
-}
-.ceremony-close:hover{opacity:1;}
-.podium{
-  position:relative;
-  width:100%;
-  height:70%;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  gap:40px;
-  z-index:10;
-}
-.rank-col{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-end;
-  transform:translateY(100%);
-  animation:podium-rise 1s cubic-bezier(0.18,0.89,0.32,1.28) forwards;
-}
-.rank-col.second{animation-delay:0.2s;}
-.rank-col.third{animation-delay:0.4s;}
-.rank-col.first{animation-delay:0.6s;z-index:20;}
-@keyframes podium-rise{to{transform:translateY(0);}}
-.avatar-box{
-  width:180px;
-  height:180px;
-  border-radius:50%;
-  border:8px solid #fff;
-  overflow:hidden;
-  margin-bottom:-40px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.8);
-  background:#000;
-  position:relative;
-  z-index:20;
-}
-.avatar-box img{width:100%;height:100%;object-fit:cover;}
-.rank-col.first .avatar-box{
-  width:260px;
-  height:260px;
-  border-color:var(--yellow);
-  box-shadow:0 0 60px rgba(255,235,59,0.9);
-}
-.info-box{
-  text-align:center;
-  background:#111;
-  border:3px solid #fff;
-  padding:50px 20px 20px;
-  width:230px;
-  position:relative;
-  clip-path:polygon(0 25%,100% 0,100% 100%,0 100%);
-}
-.rank-col.first .info-box{
-  width:320px;
-  height:280px;
-  padding-top:80px;
-  background:linear-gradient(180deg,#ffd700 0%,#b8860b 100%);
-}
-.rank-col.second .info-box{
-  height:220px;
-  background:linear-gradient(180deg,#c0c0c0 0%,#808080 100%);
-}
-.rank-col.third .info-box{
-  height:200px;
-  background:linear-gradient(180deg,#cd7f32 0%,#8b4513 100%);
-}
-.p-rank{
-  position:absolute;
-  bottom:10px;
-  right:12px;
-  font-family:var(--font-glitch);
-  font-size:42px;
-  color:rgba(0,0,0,0.25);
-}
-.p-name{
-  font-family:var(--font-graffiti);
-  font-size:30px;
-  color:#fff;
-  text-shadow:2px 2px 0 #000;
-}
-.rank-col.first .p-name{
-  font-size:46px;
-  color:#000;
-  text-shadow:none;
-}
-.p-id{
-  font-family:var(--font-stencil);
-  font-size:20px;
-  color:#fff;
-  background:#000;
-  display:inline-block;
-  padding:3px 12px;
-  margin-top:12px;
-  transform:rotate(-3deg);
-}
-.crown{
-  position:absolute;
-  top:-110px;
-  left:50%;
-  transform:translateX(-50%) rotate(-10deg);
-  font-size:90px;
-  text-shadow:0 0 25px rgba(255,235,59,0.9);
-  animation:crown-float 2s infinite ease-in-out;
-}
-@keyframes crown-float{
-  0%,100%{transform:translateX(-50%) rotate(-10deg) translateY(0);}
-  50%{transform:translateX(-50%) rotate(-10deg) translateY(-18px);}
-}
-
-/* QR 弹窗 */
-.qr-modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.9);
-  z-index:9990;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-#qrcode{background:#fff;padding:20px;border:4px solid var(--lime);}
-.qr-close{margin-top:20px;color:#fff;cursor:pointer;}
+  /* QR Modal */
+  #qrModal { flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.95); }
+  #qrcode { background:#fff; padding:20px; border:4px solid var(--lime); }
 </style>
 </head>
 <body>
@@ -522,31 +103,32 @@ td {
 <div class="container">
   <header>
     <h1>STREET WARS 2025</h1>
-    <p>街舞巅峰争霸赛 · 管理端</p>
+    <p style="font-family:'Black Ops One'; color:var(--yellow);">BATTLE MANAGEMENT SYSTEM</p>
   </header>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">选手库</div>
-    <div class="tab" onclick="switchTab(1)">海选</div>
-    <div class="tab" onclick="switchTab(2)">32 强</div>
-    <div class="tab" onclick="switchTab(3)">16 强</div>
-    <div class="tab" onclick="switchTab(4)">8 强</div>
+    <div class="tab active" onclick="switchTab(0)">选手库 (ROSTER)</div>
+    <div class="tab" onclick="switchTab(1)">海选 (AUDITION)</div>
+    <div class="tab" onclick="switchTab(2)">32强</div>
+    <div class="tab" onclick="switchTab(3)">16强</div>
+    <div class="tab" onclick="switchTab(4)">8强</div>
     <div class="tab" onclick="switchTab(5)">半决赛</div>
     <div class="tab" onclick="switchTab(6)">决赛</div>
   </div>
 
-  <!-- 选手库 -->
+  <!-- 面板0：选手库 -->
   <div class="panel active" id="panel0">
     <div class="status-bar">
       <div>
-        <input id="searchPlayer" class="search-box" placeholder="搜索姓名或号码..." oninput="renderPlayerManager()">
-        <span style="margin-left:10px;">总人数：<b id="totalCount">0</b></span>
+        <input id="searchPlayer" style="background:transparent;border:none;border-bottom:2px solid var(--cyan);width:200px;" placeholder="搜索..." oninput="renderPlayerManager()">
+        <span style="margin-left:10px;">总人数: <b id="totalCount">0</b></span>
       </div>
       <div>
         <button class="btn btn-green" onclick="syncRegistration()">接收报名</button>
-        <button class="btn btn-blue" onclick="showQR()">报名二维码</button>
-        <button class="btn btn-pink" onclick="addPlayer()">添加选手</button>
-        <button class="btn btn-dark" onclick="resetAll()">重置全部</button>
+        <button class="btn btn-blue" onclick="showQR()">二维码</button>
+        <button class="btn btn-pink" onclick="addPlayer()">手动添加</button>
+        <!-- 🔴 改良后的重置按钮 -->
+        <button class="btn btn-dark" onclick="resetGameOnly()">重置比赛(保留选手)</button>
       </div>
     </div>
     <table>
@@ -555,565 +137,258 @@ td {
     </table>
   </div>
 
-  <!-- 海选 -->
+  <!-- 面板1：海选 -->
   <div class="panel" id="panel1">
     <div class="status-bar">
       <div>
-        裁判数量：
-        <input type="number" id="judgeCount" value="3" min="1" max="5" style="width:60px" onchange="renderScoreTable(true)">
+        裁判数：<input type="number" id="judgeCount" value="3" min="1" max="5" style="width:50px" onchange="renderScoreTable(true)">
       </div>
       <div>
         <button class="btn btn-blue" onclick="renderScoreTable(true)">刷新排名</button>
-        <button class="btn btn-green" onclick="finalizeAudition()">锁定并生成 32 强对阵</button>
+        <!-- 🟣 导出 PDF 按钮 -->
+        <button class="btn btn-pink" onclick="exportAuditionPDF()">导出成绩单(PDF)</button>
+        <button class="btn btn-green" onclick="finalizeAudition()">锁定并晋级 >></button>
       </div>
     </div>
-    <p style="color:#888; font-size:12px;">提示：不足 32 人会自动填充 BYE 轮空位，一样可以继续比赛。</p>
+    <p style="color:#666; font-size:12px;">* 前32名晋级，不足32人自动补充 BYE。</p>
     <table>
       <thead><tr id="scoreHeader"></tr></thead>
       <tbody id="scoreBody"></tbody>
     </table>
   </div>
 
-  <!-- 对战轮次（32->16->8->4->2） -->
+  <!-- 对战面板容器 -->
   <div id="battlePanels"></div>
 </div>
 
-<!-- VS 大屏 -->
-<div id="vsScreen">
-  <div class="vs-side left">
-    <img id="vsAvatar1" class="vs-avatar-big" src="">
-    <div id="vsName1" class="vs-name-big">PLAYER 1</div>
-    <div id="vsId1" class="vs-id-big">#001</div>
-  </div>
+<!-- 弹窗组件 (默认 display:none) -->
+<div id="vsScreen" style="display:none;">
+  <div class="vs-side left"><img id="vsAvatar1" class="vs-avatar-big"><div id="vsName1" class="vs-name-big"></div><div id="vsId1" class="vs-id-big"></div></div>
   <div class="vs-center-logo">VS</div>
-  <div class="vs-side right">
-    <img id="vsAvatar2" class="vs-avatar-big" src="">
-    <div id="vsName2" class="vs-name-big">PLAYER 2</div>
-    <div id="vsId2" class="vs-id-big">#002</div>
-  </div>
-  <div class="vs-close-btn" onclick="document.getElementById('vsScreen').style.display='none'">×</div>
+  <div class="vs-side right"><img id="vsAvatar2" class="vs-avatar-big"><div id="vsName2" class="vs-name-big"></div><div id="vsId2" class="vs-id-big"></div></div>
+  <div class="close-btn" onclick="document.getElementById('vsScreen').style.display='none'">×</div>
 </div>
 
-<!-- 🏆 颁奖大屏 -->
-<div id="ceremonyScreen" class="ceremony-screen">
+<div id="ceremonyScreen" style="display:none;">
   <div class="ceremony-bg"></div>
   <div class="ceremony-title">THE CHAMPIONS</div>
-  <div class="ceremony-close" onclick="closeCeremony()">×</div>
+  <div class="close-btn" onclick="document.getElementById('ceremonyScreen').style.display='none'">×</div>
   <div class="podium" id="podiumContent"></div>
 </div>
 
-<!-- 报名二维码弹窗 -->
-<div id="qrModal" class="qr-modal">
+<div id="qrModal" style="display:none;">
   <div id="qrcode"></div>
-  <div class="qr-close" onclick="document.getElementById('qrModal').style.display='none'">关闭</div>
+  <p style="color:#fff; margin-top:20px;">SCAN TO REGISTER</p>
+  <div class="close-btn" onclick="document.getElementById('qrModal').style.display='none'">×</div>
 </div>
 
 <script>
-// ========== ★★★ 在这里填入你的 Supabase 信息 ★★★ ==========
-const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co";          // 例如：https://xxxx.supabase.co
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";     // Project Settings -> API -> anon 公钥
-// ============================================================
+// ========== ★★★ 配置区域 ★★★ ==========
+const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co"; 
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";
+// =========================================
 
 const { createClient } = supabase;
 const sb = (SB_URL.startsWith('http')) ? createClient(SB_URL, SB_KEY) : null;
+const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMzMzIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIvPjwvc3ZnPg==';
 
-const DEFAULT_AVATAR =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMzMzIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIvPjwvc3ZnPg==';
-
-let appData = {
-  players: [],
-  audition: { finished:false, results:[] },
-  judgeCount: 3,
-  rounds: []   // [0]=32->16,[1]=16->8,[2]=8->4,[3]=4->2,[4]=2->1
-};
-
+let appData = { players: [], audition: { finished:false, results:[] }, judgeCount: 3, rounds: [] };
 const ROUND_CONFIG = [
-  { idx:0, tabId:2,  name:'32 强对决' },
-  { idx:1, tabId:3,  name:'16 强对决' },
-  { idx:2, tabId:4,  name:'8 强对决' },
-  { idx:3, tabId:5,  name:'半决赛 4→2' },
-  { idx:4, tabId:6,  name:'决赛 2→1' }
+  { idx:0, tabId:2, name:'32 强 (TOP 32)' }, { idx:1, tabId:3, name:'16 强 (TOP 16)' },
+  { idx:2, tabId:4, name:'8 强 (TOP 8)' }, { idx:3, tabId:5, name:'半决赛 (SEMI)' },
+  { idx:4, tabId:6, name:'决赛 (FINAL)' }
 ];
 
 window.onload = async () => {
   if(sb) await loadFromCloud();
-  ensureStructures();
+  ensureData();
   createBattlePanels();
   renderPlayerManager();
   renderScoreTable(false);
   refreshBattlePanels();
-
-  // 实时监听报名表
-  if(sb){
-    sb.channel('reg-ch')
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'registrations'}, payload=>{
-        syncRegistration();
-      })
-      .subscribe();
-  }
+  if(sb) sb.channel('reg').on('postgres_changes',{event:'INSERT',schema:'public',table:'registrations'}, ()=>syncRegistration()).subscribe();
 };
 
-// 保证结构完整
-function ensureStructures(){
+function ensureData(){
   if(!appData.players) appData.players=[];
   if(!appData.audition) appData.audition={finished:false,results:[]};
-  if(!appData.audition.results) appData.audition.results=[];
   if(!Array.isArray(appData.rounds)) appData.rounds=[];
 }
 
-/* ============= Supabase 同步 ============= */
+/* --- Cloud --- */
 async function loadFromCloud(){
-  try{
-    const {data,error} = await sb.from('game_state').select('data').eq('id',1).maybeSingle();
-    if(error) { console.warn('loadFromCloud error',error); return; }
-    if(data && data.data){
-      appData = data.data;
-    }
-  }catch(e){ console.error(e); }
+  try{ const {data}=await sb.from('game_state').select('data').eq('id',1).maybeSingle(); if(data?.data) appData=data.data; }catch(e){console.error(e);}
 }
-
-async function saveToCloud(){
-  try{
-    if(!sb) return;
-    await sb.from('game_state').upsert({id:1,data:appData});
-  }catch(e){ console.error(e); }
-}
-
-// 接收报名表中的新选手(带头像)
+async function saveToCloud(){ if(sb) await sb.from('game_state').upsert({id:1,data:appData}); }
 async function syncRegistration(){
-  if(!sb){ alert("尚未配置 Supabase"); return; }
-  try{
-    const {data,error} = await sb
-      .from('registrations')
-      .select('*')
-      .eq('processed',false);
-    if(error){console.error(error);return;}
-    if(!data || !data.length){ alert("暂无新的报名数据"); return; }
-
-    let added=0;
-    data.forEach(row=>{
-      if(!appData.players.some(p=>p.id===row.player_id)){
-        appData.players.push({
-          id: row.player_id,
-          name: row.player_name,
-          avatar: row.avatar || DEFAULT_AVATAR
-        });
-        added++;
-      }
-    });
-
-    const ids = data.map(r=>r.id);
-    await sb.from('registrations').update({processed:true}).in('id',ids);
-
-    if(added>0){
-      alert(`成功接收 ${added} 位新选手`);
-      ensureStructures();
-      renderPlayerManager();
-      if(!appData.audition.finished) syncAuditionList();
-      renderScoreTable(false);
-      await saveToCloud();
-    }
-  }catch(e){ console.error(e); }
+  if(!sb){alert('未配置数据库');return;}
+  const {data}=await sb.from('registrations').select('*').eq('processed',false);
+  if(data&&data.length){
+    data.forEach(r=>{ if(!appData.players.some(p=>p.id===r.player_id)) appData.players.push({id:r.player_id,name:r.player_name,avatar:r.avatar||DEFAULT_AVATAR}); });
+    await sb.from('registrations').update({processed:true}).in('id',data.map(d=>d.id));
+    alert(`已同步 ${data.length} 人`); saveToCloud(); refreshUI();
+  } else alert('暂无新报名');
 }
+function refreshUI(){ renderPlayerManager(); if(!appData.audition.finished) syncAuditionList(); renderScoreTable(false); refreshBattlePanels(); }
 
-/* ============= Tab 切换 ============= */
-function switchTab(i){
-  document.querySelectorAll('.tab').forEach((el,idx)=>el.classList.toggle('active',idx===i));
-  document.querySelectorAll('.panel').forEach((el,idx)=>el.classList.toggle('active',idx===i));
-}
-
-/* ============= 选手库 ============= */
-function addPlayer(){
-  appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR});
-  renderPlayerManager();
-  saveToCloud();
-}
+/* --- Player --- */
+function addPlayer(){ appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); renderPlayerManager(); saveToCloud(); }
 function renderPlayerManager(){
-  const tb = document.getElementById('playerListBody');
-  const term = document.getElementById('searchPlayer').value?.toLowerCase() || '';
-  tb.innerHTML = '';
+  const term=document.getElementById('searchPlayer').value.toLowerCase();
+  const tb=document.getElementById('playerListBody'); tb.innerHTML='';
   appData.players.forEach((p,i)=>{
     if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
-    const av = p.avatar || DEFAULT_AVATAR;
-    tb.innerHTML += `
-      <tr>
-        <td><img src="${av}" class="avatar-sm"></td>
-        <td><input value="${p.id}" oninput="appData.players[${i}].id=this.value; saveToCloud();"></td>
-        <td><input style="text-align:left;" value="${p.name}" oninput="appData.players[${i}].name=this.value; saveToCloud();"></td>
-        <td><button class="btn btn-small btn-dark" onclick="removePlayer(${i})">删</button></td>
-      </tr>`;
+    tb.innerHTML+=`<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td><input value="${p.id}" oninput="appData.players[${i}].id=this.value;saveToCloud()"></td><td><input style="text-align:left;" value="${p.name}" oninput="appData.players[${i}].name=this.value;saveToCloud()"></td><td><button class="btn-small btn-dark" onclick="removePlayer(${i})">删</button></td></tr>`;
   });
-  document.getElementById('totalCount').innerText = appData.players.length;
+  document.getElementById('totalCount').innerText=appData.players.length;
 }
-function removePlayer(i){
-  if(!confirm('确定删除该选手？'))return;
-  appData.players.splice(i,1);
-  ensureStructures();
-  renderPlayerManager();
-  if(!appData.audition.finished) syncAuditionList();
-  renderScoreTable(false);
-  saveToCloud();
-}
-function resetAll(){
-  if(!confirm('确定重置全部数据？'))return;
-  appData = { players:[], audition:{finished:false,results:[]}, judgeCount:3, rounds:[] };
-  ensureStructures();
-  renderPlayerManager();
-  renderScoreTable(false);
-  refreshBattlePanels();
-  saveToCloud();
+function removePlayer(i){ if(confirm('删?')){appData.players.splice(i,1);refreshUI();saveToCloud();} }
+
+// 🔴 软重置
+function resetGameOnly(){
+  if(confirm("【重置比赛】\n这会清空海选分数和对战表，但保留选手名单。\n确定吗？")){
+    appData.audition = { finished:false, results:[] };
+    appData.rounds = [];
+    refreshUI(); saveToCloud();
+  }
 }
 
-/* ============= 海选 ============= */
+/* --- Audition --- */
 function syncAuditionList(){
-  if(appData.audition.finished) return;
-  const scoreMap = {};
-  appData.audition.results.forEach(r=>scoreMap[r.id]=r.scores||[]);
-  appData.audition.results = appData.players.map(p=>({
-    id:p.id,
-    name:p.name,
-    avatar:p.avatar||DEFAULT_AVATAR,
-    scores: scoreMap[p.id] || [],
-    avg:0,
-    rank:0
-  }));
+  if(appData.audition.finished)return;
+  const map={}; appData.audition.results.forEach(r=>map[r.id]=r.scores||[]);
+  appData.audition.results=appData.players.map(p=>({id:p.id,name:p.name,avatar:p.avatar||DEFAULT_AVATAR,scores:map[p.id]||[],avg:0,rank:0}));
 }
 function renderScoreTable(sort){
-  ensureStructures();
-  const judges = parseInt(document.getElementById('judgeCount').value) || 3;
-  appData.judgeCount = judges;
-
-  // 表头
-  const th = document.getElementById('scoreHeader');
-  let headHtml = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>`;
-  for(let i=0;i<judges;i++) headHtml+=`<th>J${i+1}</th>`;
-  th.innerHTML = headHtml;
-
-  // 计算平均分
-  appData.audition.results.forEach(p=>{
-    let sum = 0, c=0;
-    for(let i=0;i<judges;i++){
-      const v = parseFloat(p.scores?.[i]);
-      if(!isNaN(v)){ sum+=v;c++; }
-    }
-    p.avg = c>0 ? sum/c : 0;
-  });
-
-  let list = [...appData.audition.results];
-  if(sort || appData.audition.finished){
-    list.sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
-    list.forEach((p,i)=>p.rank=i+1);
-    if(appData.audition.finished) appData.audition.results = list;
-  }
-
-  const tb = document.getElementById('scoreBody');
-  tb.innerHTML = '';
-  list.forEach((p,i)=>{
-    const isTop32 = p.rank>0 && p.rank<=32;
-    const rowClass = isTop32 ? 'class="top-rank"' : '';
-    const av = p.avatar || DEFAULT_AVATAR;
-    let row = `<tr ${rowClass}>
-      <td><img src="${av}" class="avatar-sm"></td>
-      <td class="rank-num">${p.rank || '-'}</td>
-      <td>${p.id}</td>
-      <td style="text-align:left;">${p.name}</td>
-      <td style="color:${isTop32?'var(--cyan)':'var(--pink)'};font-weight:bold;">${p.avg.toFixed(2)}</td>`;
-    for(let j=0;j<judges;j++){
-      const val = p.scores?.[j] ?? '';
-      const dis = appData.audition.finished ? 'disabled' : '';
-      row += `<td><input type="number" step="0.1" value="${val}" ${dis} 
-                oninput="onScoreInput('${p.id}',${j},this.value)"></td>`;
-    }
-    row += '</tr>';
-    tb.innerHTML += row;
-  });
-}
-function onScoreInput(pid, idx, val){
-  const p = appData.audition.results.find(x=>x.id===pid);
-  if(!p) return;
-  if(!Array.isArray(p.scores)) p.scores=[];
-  p.scores[idx] = val;
-  saveToCloud();
-}
-
-// 核心：锁定海选并生成 32 强对阵（不足 32 用 BYE 填充）
-function finalizeAudition(){
-  if(appData.audition.finished){
-    alert('海选已锁定。');
-    return;
-  }
-  if(!appData.audition.results.length){
-    syncAuditionList();
-  }
-  renderScoreTable(true); // 排名
+  ensureData();
+  const judges=parseInt(document.getElementById('judgeCount').value)||3; appData.judgeCount=judges;
+  document.getElementById('scoreHeader').innerHTML=`<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>`+Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('');
   
-  let list = [...appData.audition.results].sort((a,b)=>b.avg-a.avg||a.id.localeCompare(b.id));
-  // 取前 32，如果不足 32 用 BYE 填充
-  let top32 = list.slice(0,32);
-  if(top32.length < 32){
-    const need = 32 - top32.length;
-    if(!confirm(`当前选手 ${top32.length} 人，自动填充 ${need} 个 BYE 轮空位继续？`)) return;
-    for(let i=0;i<need;i++){
-      top32.push({
-        id:'BYE',
-        name:'BYE (轮空)',
-        avatar:DEFAULT_AVATAR,
-        isBye:true,
-        scores:[],
-        avg:0,
-        rank: top32.length+1
-      });
-    }
+  appData.audition.results.forEach(p=>{
+    let s=0,c=0; for(let i=0;i<judges;i++){ let v=parseFloat(p.scores[i]); if(!isNaN(v)){s+=v;c++}}
+    p.avg=c?s/c:0;
+  });
+  if(sort||appData.audition.finished){
+    appData.audition.results.sort((a,b)=>b.avg-a.avg||a.id.localeCompare(b.id));
+    appData.audition.results.forEach((p,i)=>p.rank=i+1);
   }
-
-  // 标记锁定
-  appData.audition.finished = true;
-  appData.audition.results = top32;
-
-  // 标准 32 强种子表
-  const seed = [
-    [1,32],[16,17],[9,24],[8,25],
-    [5,28],[12,21],[13,20],[4,29],
-    [3,30],[14,19],[11,22],[6,27],
-    [7,26],[10,23],[15,18],[2,31]
-  ];
-
-  appData.rounds = []; // 清空旧对阵
-  // 生成 32->16
-  const matches = seed.map((pair,i)=>({
-    id:i+1,
-    p1: top32[pair[0]-1],
-    p2: top32[pair[1]-1],
-    winnerId: null
-  }));
-  appData.rounds[0] = { matches };
-
-  // 若某些为 BYE，自动指定胜者
-  appData.rounds[0].matches.forEach(m=>{
-    if(m.p1.isBye && !m.p2.isBye) m.winnerId=m.p2.id;
-    if(m.p2.isBye && !m.p1.isBye) m.winnerId=m.p1.id;
+  const tb=document.getElementById('scoreBody'); tb.innerHTML='';
+  appData.audition.results.forEach(p=>{
+    const top=p.rank<=32;
+    tb.innerHTML+=`<tr ${top?'class="top-rank"':''}><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td class="rank-num">${p.rank||'-'}</td><td>${p.id}</td><td style="text-align:left;">${p.name}</td><td style="color:${top?'var(--cyan)':'var(--pink)'}">${p.avg.toFixed(2)}</td>${Array(judges).fill(0).map((_,j)=>`<td><input type="number" step="0.1" value="${p.scores[j]||''}" ${appData.audition.finished?'disabled':''} oninput="scoreIn('${p.id}',${j},this.value)"></td>`).join('')}</tr>`;
   });
+}
+function scoreIn(id,idx,v){ const p=appData.audition.results.find(x=>x.id===id); if(p){p.scores[idx]=v;saveToCloud();} }
 
-  saveToCloud();
-  refreshBattlePanels();
-  switchTab(2);
+// 🟣 导出海选 PDF (中文支持)
+function exportAuditionPDF() {
+    const judges = appData.judgeCount;
+    // 确保排序
+    let list = [...appData.audition.results].sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
+    
+    // 生成打印用HTML
+    let rows = list.map((p, i) => {
+        const rank = i + 1;
+        const isPromoted = rank <= 32;
+        const bg = isPromoted ? 'background-color: #d1fae5; font-weight: bold;' : '';
+        const status = isPromoted ? '✅ PROMOTED' : '';
+        const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc;padding:5px;">${p.scores[j]||'-'}</td>`).join('');
+        return `<tr style="${bg}"><td style="border:1px solid #ccc;padding:5px;">${rank}</td><td style="border:1px solid #ccc;padding:5px;">${p.id}</td><td style="border:1px solid #ccc;padding:5px;">${p.name}</td>${scores}<td style="border:1px solid #ccc;padding:5px;">${p.avg.toFixed(2)}</td><td style="border:1px solid #ccc;padding:5px;">${status}</td></tr>`;
+    }).join('');
+
+    const html = `
+    <html><head><title>AUDITION REPORT</title></head>
+    <body style="font-family: sans-serif; padding: 20px;">
+        <h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1>
+        <table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;">
+            <tr style="background:#eee;"><th style="border:1px solid #ccc;padding:8px;">RANK</th><th style="border:1px solid #ccc;padding:8px;">ID</th><th style="border:1px solid #ccc;padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc;padding:8px;">SCORES</th><th style="border:1px solid #ccc;padding:8px;">AVG</th><th style="border:1px solid #ccc;padding:8px;">STATUS</th></tr>
+            ${rows}
+        </table>
+    </body></html>`;
+    const win = window.open('','_blank'); win.document.write(html); win.document.close(); setTimeout(()=>win.print(),500);
 }
 
-/* ============= 对战轮次 (32→16→8→4→2→1) ============= */
+function finalizeAudition(){
+  if(appData.audition.finished){alert('Locked');return;}
+  renderScoreTable(true);
+  let top32=appData.audition.results.slice(0,32);
+  if(top32.length<32){
+    if(!confirm(`仅 ${top32.length} 人，填充 BYE 继续？`))return;
+    const need=32-top32.length;
+    for(let i=0;i<need;i++) top32.push({id:'BYE',name:'BYE (轮空)',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:0});
+  }
+  appData.audition.finished=true;
+  appData.audition.results=top32;
+  const seed=[[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
+  appData.rounds[0]={matches:seed.map((p,i)=>({id:i+1,p1:top32[p[0]-1],p2:top32[p[1]-1],winnerId:null}))};
+  appData.rounds[0].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
+  saveToCloud(); refreshUI(); switchTab(2);
+}
+
+/* --- Battle --- */
 function createBattlePanels(){
-  const container = document.getElementById('battlePanels');
-  container.innerHTML = '';
-  ROUND_CONFIG.forEach(cfg=>{
-    const extraBtn = (cfg.idx===4)
-      ? `<button class="btn btn-pink" onclick="showCeremony()">🏆 颁奖典礼</button>`
-      : '';
-    container.innerHTML += `
-      <div class="panel" id="panel${cfg.tabId}">
-        <div class="status-bar">
-          <div>${cfg.name}</div>
-          <div>
-            <button class="btn btn-blue" onclick="refreshBattlePanels()">刷新对阵</button>
-            <button class="btn btn-green" id="nextBtn${cfg.idx}" onclick="nextRound(${cfg.idx})">生成下一轮</button>
-            ${extraBtn}
-          </div>
-        </div>
-        <div class="battle-container" id="battleContainer${cfg.idx}"></div>
+  document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`
+    <div class="panel" id="panel${cfg.tabId}">
+      <div class="status-bar"><div>${cfg.name}</div>
+        <div><button class="btn btn-green" id="nextBtn${cfg.idx}" onclick="nextRound(${cfg.idx})">下一轮</button>${cfg.idx===4?'<button class="btn btn-pink" onclick="showCeremony()">🏆 颁奖</button>':''}</div>
       </div>
-    `;
-  });
+      <div class="battle-container" id="box${cfg.idx}"></div>
+    </div>`).join('');
 }
-
 function refreshBattlePanels(){
-  ensureStructures();
+  ensureData();
   ROUND_CONFIG.forEach(cfg=>{
-    const idx = cfg.idx;
-    const round = appData.rounds[idx];
-    const box = document.getElementById('battleContainer'+idx);
-    const btn = document.getElementById('nextBtn'+idx);
-    if(!box) return;
-    box.innerHTML = '';
-    if(!round || !round.matches){ 
-      if(btn) { btn.disabled = true; btn.textContent = '等待上一轮'; }
-      return;
-    }
-    const allDone = round.matches.every(m=>m.winnerId);
-    if(btn){
-      btn.disabled = (idx===4) || !allDone; // 决赛不再产生下一轮
-      btn.textContent = idx===4 ? '已是最后一轮' : (allDone?'生成下一轮':'等待胜者');
-    }
+    const idx=cfg.idx, round=appData.rounds[idx], box=document.getElementById('box'+idx), btn=document.getElementById('nextBtn'+idx);
+    if(!box)return; box.innerHTML='';
+    if(!round||!round.matches){ if(btn){btn.disabled=true;btn.textContent='...';} return; }
+    const done=round.matches.every(m=>m.winnerId);
+    if(btn){ btn.disabled=!done; if(idx===4)btn.style.display='none'; }
     round.matches.forEach((m,i)=>{
-      const p1 = m.p1 || {id:'?',name:'?',avatar:DEFAULT_AVATAR};
-      const p2 = m.p2 || {id:'?',name:'?',avatar:DEFAULT_AVATAR};
-      const av1 = p1.avatar || DEFAULT_AVATAR;
-      const av2 = p2.avatar || DEFAULT_AVATAR;
-      const w1 = m.winnerId===p1.id;
-      const w2 = m.winnerId===p2.id;
-      const locked = !!appData.rounds[idx+1]; // 已有下一轮则锁死本轮
-      const click1 = locked ? '' : `onclick="setWinner(${idx},${i},'${p1.id}')"`;
-      const click2 = locked ? '' : `onclick="setWinner(${idx},${i},'${p2.id}')"`;
-
-      box.innerHTML += `
-      <div class="match-card">
-        <div class="match-tools">
-          <button class="btn btn-small btn-dark" onclick="openVSScreen('${escapeHtml(p1.name)}','${p1.id}','${av1}','${escapeHtml(p2.name)}','${p2.id}','${av2}')">VS屏幕</button>
-        </div>
-        <div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${click1}>
-          <img src="${av1}">
-          <div class="fighter-name">${p1.name}</div>
-          <div class="fighter-id">#${p1.id}</div>
-        </div>
+      const p1=m.p1||{}, p2=m.p2||{}, w1=m.winnerId===p1.id, w2=m.winnerId===p2.id, lk=!!appData.rounds[idx+1];
+      const c1=lk?'':`onclick="setWin(${idx},${i},'${p1.id}')"`, c2=lk?'':`onclick="setWin(${idx},${i},'${p2.id}')"`;
+      box.innerHTML+=`<div class="match-card">
+        <div class="match-tools"><button class="btn-small btn-dark" onclick="openVS('${escape(p1.name)}','${p1.id}','${p1.avatar}','${escape(p2.name)}','${p2.id}','${p2.avatar}')">VS</button></div>
+        <div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${c1}><img src="${p1.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p1.name}</div></div>
         <div class="vs-tag">VS</div>
-        <div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${click2}>
-          <img src="${av2}">
-          <div class="fighter-name">${p2.name}</div>
-          <div class="fighter-id">#${p2.id}</div>
-        </div>
+        <div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${c2}><img src="${p2.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p2.name}</div></div>
       </div>`;
     });
   });
 }
-
-function setWinner(roundIdx, matchIdx, pid){
-  const round = appData.rounds[roundIdx];
-  if(!round) return;
-  const m = round.matches[matchIdx];
-  if(!m) return;
-  m.winnerId = (m.winnerId===pid ? null : pid);
-  saveToCloud();
-  refreshBattlePanels();
-}
-
-// 生成下一轮：roundIdx 0..3
-function nextRound(roundIdx){
-  if(roundIdx===4) return; // 决赛没有下一轮
-  const round = appData.rounds[roundIdx];
-  if(!round || !round.matches) return;
-  if(!round.matches.every(m=>m.winnerId)){
-    alert('本轮尚有对决未选出胜者。');
-    return;
+function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId=w; saveToCloud(); refreshBattlePanels(); }
+function nextRound(i){
+  if(i===4)return; if(!confirm('Next?'))return;
+  const cur=appData.rounds[i].matches, next=[];
+  for(let k=0;k<cur.length;k+=2){
+    const w1=cur[k].winnerId===cur[k].p1.id?cur[k].p1:cur[k].p2;
+    const w2=cur[k+1].winnerId===cur[k+1].p1.id?cur[k+1].p1:cur[k+1].p2;
+    next.push({id:next.length+1,p1:w1,p2:w2,winnerId:null});
   }
-  if(!confirm('根据本轮结果生成下一轮对阵？'))return;
-
-  const nextMatches=[];
-  for(let i=0;i<round.matches.length;i+=2){
-    const m1 = round.matches[i];
-    const m2 = round.matches[i+1];
-    const w1 = winnerObject(m1);
-    const w2 = winnerObject(m2);
-    nextMatches.push({id:nextMatches.length+1, p1:w1, p2:w2, winnerId:null});
-  }
-  appData.rounds[roundIdx+1] = { matches: nextMatches };
-  saveToCloud();
-  refreshBattlePanels();
-  switchTab(roundIdx+3); // 切换到下一轮panel的tab
+  appData.rounds[i+1]={matches:next}; 
+  appData.rounds[i+1].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
+  saveToCloud(); refreshUI(); switchTab(i+3);
 }
 
-function winnerObject(m){
-  if(!m || !m.winnerId) return m?.p1 || {id:'?',name:'?',avatar:DEFAULT_AVATAR};
-  return (m.winnerId===m.p1.id)?m.p1:m.p2;
-}
-
-/* ============= VS 屏幕 ============= */
-function openVSScreen(n1,id1,av1,n2,id2,av2){
-  document.getElementById('vsName1').innerText = n1;
-  document.getElementById('vsId1').innerText = '#'+id1;
-  document.getElementById('vsAvatar1').src = av1 || DEFAULT_AVATAR;
-
-  document.getElementById('vsName2').innerText = n2;
-  document.getElementById('vsId2').innerText = '#'+id2;
-  document.getElementById('vsAvatar2').src = av2 || DEFAULT_AVATAR;
-
+/* --- Display --- */
+function openVS(n1,i1,a1,n2,i2,a2){
+  document.getElementById('vsName1').innerText=unescape(n1); document.getElementById('vsId1').innerText='#'+i1; document.getElementById('vsAvatar1').src=a1||DEFAULT_AVATAR;
+  document.getElementById('vsName2').innerText=unescape(n2); document.getElementById('vsId2').innerText='#'+i2; document.getElementById('vsAvatar2').src=a2||DEFAULT_AVATAR;
   document.getElementById('vsScreen').style.display='flex';
 }
-
-/* ============= 颁奖典礼 ============= */
-function createCeremonyBlock(player, rankClass, label){
-  if(!player) return '';
-  const av = player.avatar || DEFAULT_AVATAR;
-  const crown = rankClass==='first' ? '<div class="crown">👑</div>' : '';
-  return `
-    <div class="rank-col ${rankClass}">
-      ${crown}
-      <div class="avatar-box"><img src="${av}"></div>
-      <div class="info-box">
-        <div class="p-name">${escapeHtml(player.name||'UNKNOWN')}</div>
-        <div class="p-id">#${player.id||''}</div>
-        <div class="p-rank">${label}</div>
-      </div>
-    </div>
-  `;
-}
-
 function showCeremony(){
-  const finalRound = appData.rounds[4];
-  if(!finalRound || !finalRound.matches || !finalRound.matches[0]){
-    alert('还没有决赛数据。');
-    return;
-  }
-  const fm = finalRound.matches[0];
-  if(!fm.winnerId){
-    alert('请先在决赛中选择胜者。');
-    return;
-  }
-  const champion = fm.winnerId===fm.p1.id?fm.p1:fm.p2;
-  const runner  = fm.winnerId===fm.p1.id?fm.p2:fm.p1;
-
-  // 半决赛败者 => 季军
-  const semiRound = appData.rounds[3];
-  const thirds=[];
-  if(semiRound && semiRound.matches){
-    semiRound.matches.forEach(m=>{
-      if(!m.winnerId)return;
-      const loser = m.winnerId===m.p1.id?m.p2:m.p1;
-      if(loser && loser.id!=='BYE') thirds.push(loser);
-    });
-  }
-
-  const podium = document.getElementById('podiumContent');
-  podium.innerHTML='';
-
-  if(runner) podium.innerHTML += createCeremonyBlock(runner,'second','2ND');
-  podium.innerHTML += createCeremonyBlock(champion,'first','WINNER');
-  if(thirds.length){
-    thirds.forEach(t=> podium.innerHTML += createCeremonyBlock(t,'third','3RD'));
-  }
-
-  document.getElementById('ceremonyScreen').style.display='flex';
-  fireConfetti(); // 彩带特效
+  const fr=appData.rounds[4]; if(!fr||!fr.matches[0].winnerId){alert('No Winner');return;}
+  const m=fr.matches[0], ch=m.winnerId===m.p1.id?m.p1:m.p2, ru=m.winnerId===m.p1.id?m.p2:m.p1;
+  const sr=appData.rounds[3], th=[];
+  if(sr) sr.matches.forEach(sm=>{if(sm.winnerId){const l=sm.winnerId===sm.p1.id?sm.p2:sm.p1; if(l&&l.id!=='BYE')th.push(l)}});
+  const p=document.getElementById('podiumContent'); p.innerHTML='';
+  p.innerHTML+=mkPod(ru,'second','2ND'); p.innerHTML+=mkPod(ch,'first','WINNER'); th.forEach(t=>p.innerHTML+=mkPod(t,'third','3RD'));
+  document.getElementById('ceremonyScreen').style.display='flex'; fireConfetti();
 }
-function closeCeremony(){
-  document.getElementById('ceremonyScreen').style.display='none';
-}
-
-function fireConfetti(){
-  if(typeof confetti==='undefined')return;
-  const duration = 5*1000;
-  const end = Date.now()+duration;
-  const defaults = {startVelocity:40, spread:360, ticks:80, zIndex:10000};
-  const interval = setInterval(function(){
-    const timeLeft = end - Date.now();
-    if(timeLeft<=0){ clearInterval(interval); return; }
-    const count = 80*(timeLeft/duration);
-    confetti(Object.assign({},defaults,{particleCount:count, origin:{x:Math.random()*0.3,y:Math.random()*0.3}}));
-    confetti(Object.assign({},defaults,{particleCount:count, origin:{x:0.7+Math.random()*0.3,y:Math.random()*0.3}}));
-  },250);
-}
-
-/* ============= 报名二维码 ============= */
-function showQR(){
-  const defaultUrl = window.location.href.replace('admin_qr.html','register.html');
-  const url = prompt('请输入报名页(register.html)的公网地址：',defaultUrl);
-  if(!url)return;
-  const box = document.getElementById('qrcode');
-  box.innerHTML='';
-  new QRCode(box,{text:url,width:256,height:256});
-  document.getElementById('qrModal').style.display='flex';
-}
-
-/* ============= 小工具函数 ============= */
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+function mkPod(p,c,t){return `<div class="rank-col ${c}">${c==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${p.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${p.name}</div><div class="p-id">#${p.id}</div><div class="p-rank">${t}</div></div></div>`;}
+function fireConfetti(){ confetti({particleCount:150,spread:100,origin:{y:0.6}}); }
+function switchTab(n){ document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
+function showQR(){ const u=prompt("Register URL:",window.location.href.replace('admin_qr.html','register.html')); if(u){document.getElementById('qrcode').innerHTML="";new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256});document.getElementById('qrModal').style.display='flex';} }
+function clearAll(){if(confirm('RESET ALL?')){appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]};saveToCloud();refreshUI();}}
 </script>
 </body>
 </html>
