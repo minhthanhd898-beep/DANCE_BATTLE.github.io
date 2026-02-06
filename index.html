@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STREET WARS 2025 - HUB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rubik+Glitch&display=swap" rel="stylesheet">
+<style>
+  body {
+    background-color: #0f0f0f;
+    background-image: 
+        linear-gradient(335deg, rgba(255,255,255,0.03) 23px, transparent 23px),
+        linear-gradient(155deg, rgba(255,255,255,0.03) 23px, transparent 23px);
+    background-size: 58px 58px;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: sans-serif;
+    color: #fff;
+  }
+  h1 {
+    font-family: 'Rubik Glitch', cursive;
+    font-size: 60px;
+    color: #fff;
+    text-shadow: 4px 4px 0 #ff0099, -2px -2px 0 #00f7ff;
+    margin-bottom: 50px;
+    text-align: center;
+    line-height: 1;
+  }
+  .menu {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+  }
+  .card {
+    display: block;
+    text-decoration: none;
+    background: #000;
+    border: 2px solid #fff;
+    padding: 30px;
+    text-align: center;
+    transition: 0.3s;
+    position: relative;
+    box-shadow: 8px 8px 0 #333;
+    clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%);
+  }
+  .card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0 #ff0099;
+    border-color: #00f7ff;
+  }
+  .card h2 {
+    font-family: 'Black Ops One', cursive;
+    font-size: 28px;
+    margin: 0;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  .card p {
+    color: #888;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .admin-link {
+    border-color: #ff0099;
+  }
+  .player-link {
+    border-color: #ccff00;
+  }
+  .player-link:hover {
+    box-shadow: 12px 12px 0 #ccff00;
+  }
+</style>
+</head>
+<body>
+
+  <h1>STREET WARS<br>2025</h1>
+
+  <div class="menu">
+    <!-- 跳转到选手报名页 -->
+    <a href="register.html" class="card player-link">
+      <h2 style="color:#ccff00">PLAYER ENTRY</h2>
+      <p>选手报名通道 / REGISTER HERE</p>
+    </a>
+
+    <!-- 跳转到管理后台 -->
+    <a href="admin_qr.html" class="card admin-link">
+      <h2 style="color:#ff0099">ADMIN PANEL</h2>
+      <p>主办方管理后台 / STAFF ONLY</p>
+    </a>
+  </div>
+
+</body>
+</html>
