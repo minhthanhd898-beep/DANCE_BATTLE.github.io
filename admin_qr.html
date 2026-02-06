@@ -149,33 +149,7 @@
     renderPlayerManager();
     renderScoreTable(false); 
     refreshBattlePanels();
-    
-    // 开启实时监听 (当其他管理员修改了数据，或者有新报名)
-    if (_supabase) {
-        document.getElementById('syncStatus').classList.add('sync-active');
-        
-        // 监听报名表
-        _supabase.channel('registrations_channel')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, payload => {
-            // 当有新报名时，自动处理
-            console.log('New player registered!', payload.new);
-            // 可以在这里加个小红点提示，或者直接自动同步
-            syncRegistration(); 
-        })
-        .subscribe();
-
-        // 监听比赛主数据表 (用于多管理员同步)
-        _supabase.channel('gamestate_channel')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' }, payload => {
-            console.log('Game state updated by another admin');
-            appData = payload.new.data; // 更新本地数据
-            refreshAllUI();
-        })
-        .subscribe();
-    }
-  };
-
-  /* --- 云端同步核心 --- */
+     /* --- 云端同步核心 --- */
   async function loadFromCloud() {
       if(!_supabase) return;
       // 读取 game_state 表 ID=1 的数据
@@ -200,6 +174,31 @@
       
       if(error) console.error("Cloud save failed:", error);
   }
+
+    // 开启实时监听 (当其他管理员修改了数据，或者有新报名)
+    if (_supabase) {
+        document.getElementById('syncStatus').classList.add('sync-active');
+        
+        // 监听报名表
+        _supabase.channel('registrations_channel')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, payload => {
+            // 当有新报名时，自动处理
+            console.log('New player registered!', payload.new);
+            // 可以在这里加个小红点提示，或者直接自动同步
+            syncRegistration(); 
+        })
+        .subscribe();
+
+        // 监听比赛主数据表 (用于多管理员同步)
+        _supabase.channel('gamestate_channel')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_state', filter: 'id=eq.1' }, payload => {
+            console.log('Game state updated by another admin');
+            appData = payload.new.data; // 更新本地数据
+            refreshAllUI();
+        })
+        .subscribe();
+    }
+  };
 
   // 同步报名表数据到选手库
 async function loadFromCloud() {
@@ -354,4 +353,5 @@ async function loadFromCloud() {
 </body>
 
 </html>
+
 
