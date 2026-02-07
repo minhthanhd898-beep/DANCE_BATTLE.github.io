@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>STREET WARS 2025 - ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- 依赖库 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Permanent+Marker&family=Rubik+Glitch&display=swap" rel="stylesheet">
@@ -12,7 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-  /* --- 样式表 (保持嘻哈风格) --- */
   :root { --cyan: #00f7ff; --pink: #ff0099; --lime: #ccff00; --yellow: #ffee00; --bg: #0f0f0f; }
   body { background: var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill-opacity="0.05"><path d="M0 60 L60 0 H30 L0 30 Z" fill="white"/></svg>'); color: #eee; font-family: "Microsoft YaHei", sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
   
@@ -58,7 +56,6 @@
   .fighter.loser { opacity:0.3; filter:grayscale(1); }
   .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
-  /* 弹窗默认隐藏 */
   #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
   
   #vsScreen { flex-direction: row; align-items: center; }
@@ -137,7 +134,7 @@
       <div>
         <button class="btn btn-blue" onclick="renderScoreTable(true)">刷新排名</button>
         <button class="btn btn-pink" onclick="exportAuditionPDF()">导出成绩单(PDF)</button>
-        <button class="btn btn-green" onclick="finalizeAudition()">锁定并生成 32 强</button>
+        <button class="btn btn-green" onclick="finalizeAudition()">锁定并晋级 >></button>
       </div>
     </div>
     <p style="color:#666; font-size:12px;">* 前32名晋级，不足32人自动补充 BYE。</p>
@@ -173,10 +170,10 @@
 </div>
 
 <script>
-// ========== ★★★ 请替换您的 KEY ★★★ ==========
+// ========== ★★★ 配置区域 ★★★ ==========
 const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co";          
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";     
-// ===============================================
+// =========================================
 
 const { createClient } = supabase;
 const sb = (SB_URL.startsWith('http')) ? createClient(SB_URL, SB_KEY) : null;
@@ -325,65 +322,6 @@ function onScoreInput(pid,idx,val){
     if(p){ if(!p.scores)p.scores=[]; p.scores[idx]=val; saveToCloud(); } 
 }
 
-// 核心修复：不足32人自动补位 BYE
-function finalizeAudition(){
-  if(appData.audition.finished){ alert('已锁定'); return; }
-  renderScoreTable(true); // 先排序
-  
-  let top32 = appData.audition.results.slice(0,32);
-  const currentCount = top32.length;
-  
-  // 补位逻辑
-  if(currentCount < 32){
-    const need = 32 - currentCount;
-    if(!confirm(`当前仅 ${currentCount} 人，系统将自动填充 ${need} 个 'BYE' (轮空) 以凑齐 32 强。\n\n是否继续？`)) return;
-    
-    for(let i=0; i<need; i++){
-        top32.push({
-            id: 'BYE', 
-            name: 'BYE', 
-            avatar: DEFAULT_AVATAR, 
-            isBye: true, 
-            scores: [], 
-            avg: 0, 
-            rank: 999 
-        });
-    }
-  } else {
-      if(!confirm("确定锁定海选分数并生成 32 强对阵？")) return;
-  }
-
-  appData.audition.finished = true;
-  appData.audition.results = top32;
-
-  // 1vs32, 2vs31...
-  const seed = [
-    [1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],
-    [3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]
-  ];
-
-  appData.rounds = []; 
-  // 生成第一轮
-  const matches = seed.map((pair,i)=>({
-    id:i+1,
-    p1: top32[pair[0]-1],
-    p2: top32[pair[1]-1],
-    winnerId: null
-  }));
-  appData.rounds[0] = { matches };
-
-  // 自动让 BYE 的对手获胜
-  appData.rounds[0].matches.forEach(m=>{
-    if(m.p1.isBye && !m.p2.isBye) m.winnerId=m.p2.id;
-    if(m.p2.isBye && !m.p1.isBye) m.winnerId=m.p1.id;
-  });
-
-  saveToCloud();
-  refreshBattlePanels();
-  switchTab(2);
-}
-
-// 导出 PDF
 function exportAuditionPDF() {
     const judges = appData.judgeCount;
     let list = [...appData.audition.results].sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
@@ -394,11 +332,28 @@ function exportAuditionPDF() {
         const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc; padding:5px;">${p.scores[j] || '-'}</td>`).join('');
         return `<tr style="${bg}"><td style="border:1px solid #ccc; padding:5px;">${i+1}</td><td style="border:1px solid #ccc; padding:5px;">${p.id}</td><td style="border:1px solid #ccc; padding:5px; text-align:left;">${p.name}</td>${scores}<td style="border:1px solid #ccc; padding:5px;">${Number(p.avg).toFixed(2)}</td><td style="border:1px solid #ccc; padding:5px; color:${isPromoted?'green':'#999'}">${status}</td></tr>`;
     }).join('');
-    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const win = window.open('', '_blank'); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 500);
 }
 
-/* ============= Battle & Display ============= */
+function finalizeAudition(){
+  if(appData.audition.finished){ alert('Locked.'); return; }
+  renderScoreTable(true);
+  let top32 = appData.audition.results.slice(0,32);
+  if(top32.length < 32){
+    if(!confirm(`不足32人(当前${top32.length})，填充BYE继续？`)) return;
+    const need = 32 - top32.length;
+    for(let i=0;i<need;i++) top32.push({id:'BYE',name:'BYE (轮空)',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:0});
+  }
+  appData.audition.finished = true;
+  appData.audition.results = top32;
+  const seed = [[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
+  appData.rounds[0] = { matches: seed.map((pair,i)=>({ id:i+1, p1:top32[pair[0]-1], p2:top32[pair[1]-1], winnerId:null })) };
+  appData.rounds[0].matches.forEach(m=>{ if(m.p1.isBye) m.winnerId=m.p2.id; if(m.p2.isBye) m.winnerId=m.p1.id; });
+  saveToCloud(); refreshBattlePanels(); switchTab(2);
+}
+
+/* ============= Battle ============= */
 function createBattlePanels(){
   document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`
     <div class="panel" id="panel${cfg.tabId}">
@@ -430,7 +385,6 @@ function refreshBattlePanels(){
       const locked = !!appData.rounds[idx+1];
       const cl1 = locked?'':`onclick="setWin(${idx},${i},'${p1.id}')"`;
       const cl2 = locked?'':`onclick="setWin(${idx},${i},'${p2.id}')"`;
-      // 修复：不直接传中文名，改传索引，在 openVSScreen 里解包
       box.innerHTML += `
       <div class="match-card">
         <div class="match-tools"><button class="btn btn-small btn-dark" onclick="openVS('${idx}','${i}')">VS</button></div>
@@ -442,22 +396,37 @@ function refreshBattlePanels(){
   });
 }
 function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId = w; saveToCloud(); refreshBattlePanels(); }
+
+// 核心修复：晋级逻辑
 function nextRound(idx){
   if(idx===4)return;
   if(!confirm('生成下一轮？'))return;
   const cur = appData.rounds[idx].matches;
   const next = [];
   for(let i=0; i<cur.length; i+=2){
-    const w1 = cur[i].winnerId===cur[i].p1.id ? cur[i].p1 : cur[i].p2;
-    const w2 = cur[i+1].winnerId===cur[i+1].p1.id ? cur[i+1].p1 : cur[i+1].p2;
+    // 强制获取胜者对象
+    const w1 = getWinnerObj(cur[i]);
+    const w2 = getWinnerObj(cur[i+1]);
     next.push({ id:next.length+1, p1:w1, p2:w2, winnerId:null });
   }
   appData.rounds[idx+1] = { matches:next };
-  appData.rounds[idx+1].matches.forEach(m=>{ if(m.p1.isBye) m.winnerId=m.p2.id; if(m.p2.isBye) m.winnerId=m.p1.id; });
+  // 自动判断 BYE
+  appData.rounds[idx+1].matches.forEach(m=>{ 
+      if(m.p1.isBye) m.winnerId=m.p2.id; 
+      if(m.p2.isBye) m.winnerId=m.p1.id; 
+  });
   saveToCloud(); refreshUI(); switchTab(idx+3);
 }
 
-// 修复后的 VS 大屏调用：通过索引查找，不传字符串避免乱码
+function getWinnerObj(m) {
+    if(!m) return {id:'BYE',name:'BYE',isBye:true};
+    if(m.winnerId === m.p1.id) return m.p1;
+    if(m.winnerId === m.p2.id) return m.p2;
+    // 如果没有 winnerId (异常情况)，返回 BYE 防止卡死
+    return {id:'BYE',name:'BYE',isBye:true};
+}
+
+/* ============= VS & Ceremony ============= */
 function openVS(rIdx, mIdx){
   const m = appData.rounds[rIdx].matches[mIdx];
   const p1 = m.p1, p2 = m.p2;
@@ -465,7 +434,6 @@ function openVS(rIdx, mIdx){
   document.getElementById('vsName2').innerText=p2.name; document.getElementById('vsId2').innerText='#'+p2.id; document.getElementById('vsAvatar2').src=p2.avatar||DEFAULT_AVATAR;
   document.getElementById('vsScreen').style.display='flex';
 }
-
 function showCeremony(){
   const fr = appData.rounds[4];
   if(!fr || !fr.matches[0].winnerId){ alert('请先决出冠军'); return; }
@@ -483,8 +451,9 @@ function showCeremony(){
   fireConfetti();
 }
 function createCeremonyBlock(player, rankClass, label){
-  return `<div class="rank-col ${rankClass}">${rankClass==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${player.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${player.name}</div><div class="p-id">#${player.id}</div><div class="p-rank">${label}</div></div></div>`;
+  return `<div class="rank-col ${rankClass}">${rankClass==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${player.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${escapeHtml(player.name)}</div><div class="p-id">#${player.id}</div><div class="p-rank">${label}</div></div></div>`;
 }
+function escapeHtml(str){ return String(str).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fireConfetti(){ confetti({particleCount:150,spread:100,origin:{y:0.6}}); }
 function switchTab(n){ document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
 function showQR(){ const u=prompt("Register URL:",window.location.href.replace('admin_qr.html','register.html')); if(u){document.getElementById('qrcode').innerHTML="";new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256});document.getElementById('qrModal').style.display='flex';} }
