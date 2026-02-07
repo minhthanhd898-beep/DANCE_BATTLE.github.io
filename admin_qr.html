@@ -4,16 +4,15 @@
 <meta charset="UTF-8">
 <title>STREET WARS 2025 - ADMIN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Supabase SDK -->
+<!-- 依赖库 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- 特效库 -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<!-- 字体 -->
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Permanent+Marker&family=Rubik+Glitch&display=swap" rel="stylesheet">
-<!-- 二维码库 -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
+  /* --- 样式表 (保持嘻哈风格) --- */
   :root { --cyan: #00f7ff; --pink: #ff0099; --lime: #ccff00; --yellow: #ffee00; --bg: #0f0f0f; }
   body { background: var(--bg) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill-opacity="0.05"><path d="M0 60 L60 0 H30 L0 30 Z" fill="white"/></svg>'); color: #eee; font-family: "Microsoft YaHei", sans-serif; margin: 0; padding: 20px; overflow-x: hidden; }
   
@@ -21,7 +20,6 @@
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
   h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
   
-  /* Tabs */
   .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
   .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition:0.3s; }
   .tab:hover { background: #444; color: #fff; }
@@ -31,7 +29,6 @@
   .panel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   
-  /* Buttons */
   .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
   .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
   .btn-green { background: var(--lime); color: #000; }
@@ -43,7 +40,6 @@
   input { background: transparent; border: 1px solid #555; color: #fff; padding: 5px; text-align: center; font-family: 'Black Ops One'; font-size: 18px; }
   .status-bar { background: #000; border: 2px solid #444; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom:20px; }
   
-  /* Table */
   table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
   th { color: #888; font-size: 14px; border-bottom: 2px solid #333; padding: 6px; }
   td { background: #111; padding: 6px; border-top: 1px solid #222; border-bottom: 1px solid #222; vertical-align: middle; text-align: center; }
@@ -52,7 +48,6 @@
   .rank-num { font-family: 'Rubik Glitch'; font-size: 20px; color: #777; }
   .top-rank .rank-num { color: var(--cyan); text-shadow: 0 0 2px rgba(0,247,255,0.7); }
 
-  /* Battle Cards */
   .battle-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-top: 20px; }
   .match-card { position: relative; background:#000; border:2px solid #fff; display:flex; align-items:center; justify-content:space-between; padding:10px; box-shadow:5px 5px 0 #000; }
   .match-tools { position:absolute; top:5px; right:5px; z-index:10; }
@@ -63,10 +58,9 @@
   .fighter.loser { opacity:0.3; filter:grayscale(1); }
   .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
-  /* Popups */
+  /* 弹窗默认隐藏 */
   #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
   
-  /* VS Screen */
   #vsScreen { flex-direction: row; align-items: center; }
   .vs-side { flex:1; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .vs-side.left { background:linear-gradient(135deg,#111,#000); border-right:5px solid var(--cyan); }
@@ -77,7 +71,6 @@
   .vs-center-logo { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-family:'Rubik Glitch'; font-size:140px; color:#fff; text-shadow:0 0 30px var(--pink); pointer-events:none; }
   .close-btn { position:absolute; top:20px; right:20px; font-size:30px; color:#fff; cursor:pointer; opacity:0.6; z-index:10000; }
 
-  /* Ceremony */
   #ceremonyScreen { flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:40px; }
   .ceremony-bg { position:absolute; inset:0; background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.1) 0, #000 60%); z-index:-1; }
   .ceremony-title { position:absolute; top:40px; font-family:'Rubik Glitch'; font-size:72px; color:#fff; text-shadow:0 0 25px var(--pink); }
@@ -93,7 +86,6 @@
   .crown { position:absolute; top:-100px; font-size:80px; animation:bounce 2s infinite; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
 
-  /* QR Modal */
   #qrModal { flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.95); }
   #qrcode { background:#fff; padding:20px; border:4px solid var(--lime); }
 </style>
@@ -116,7 +108,7 @@
     <div class="tab" onclick="switchTab(6)">决赛</div>
   </div>
 
-  <!-- 面板0：选手库 -->
+  <!-- 选手库 -->
   <div class="panel active" id="panel0">
     <div class="status-bar">
       <div>
@@ -136,7 +128,7 @@
     </table>
   </div>
 
-  <!-- 面板1：海选 -->
+  <!-- 海选 -->
   <div class="panel" id="panel1">
     <div class="status-bar">
       <div>
@@ -145,7 +137,7 @@
       <div>
         <button class="btn btn-blue" onclick="renderScoreTable(true)">刷新排名</button>
         <button class="btn btn-pink" onclick="exportAuditionPDF()">导出成绩单(PDF)</button>
-        <button class="btn btn-green" onclick="finalizeAudition()">锁定并晋级 >></button>
+        <button class="btn btn-green" onclick="finalizeAudition()">锁定并生成 32 强</button>
       </div>
     </div>
     <p style="color:#666; font-size:12px;">* 前32名晋级，不足32人自动补充 BYE。</p>
@@ -181,46 +173,61 @@
 </div>
 
 <script>
-// ========== ★★★ 配置区域 ★★★ ==========
-const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co"; 
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";
-// =========================================
+// ========== ★★★ 请替换您的 KEY ★★★ ==========
+const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co";          
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";     
+// ===============================================
 
 const { createClient } = supabase;
 const sb = (SB_URL.startsWith('http')) ? createClient(SB_URL, SB_KEY) : null;
 const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMzMzIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIvPjwvc3ZnPg==';
 
-let appData = { players: [], audition: { finished:false, results:[] }, judgeCount: 3, rounds: [] };
+let appData = {
+  players: [],
+  audition: { finished:false, results:[] },
+  judgeCount: 3,
+  rounds: []   
+};
+
 const ROUND_CONFIG = [
-  { idx:0, tabId:2, name:'32 强 (TOP 32)' }, { idx:1, tabId:3, name:'16 强 (TOP 16)' },
-  { idx:2, tabId:4, name:'8 强 (TOP 8)' }, { idx:3, tabId:5, name:'半决赛 (SEMI)' },
-  { idx:4, tabId:6, name:'决赛 (FINAL)' }
+  { idx:0, tabId:2,  name:'32 强 (TOP 32)' }, { idx:1, tabId:3,  name:'16 强 (TOP 16)' },
+  { idx:2, tabId:4,  name:'8 强 (TOP 8)' }, { idx:3, tabId:5,  name:'半决赛 (SEMI)' },
+  { idx:4, tabId:6,  name:'决赛 (FINAL)' }
 ];
 
 window.onload = async () => {
   if(sb) await loadFromCloud();
-  ensureData();
+  ensureStructures();
   createBattlePanels();
   renderPlayerManager();
   renderScoreTable(false);
   refreshBattlePanels();
-  if(sb) sb.channel('reg').on('postgres_changes',{event:'INSERT',schema:'public',table:'registrations'}, ()=>syncRegistration()).subscribe();
+  if(sb){
+    sb.channel('reg-ch').on('postgres_changes',{event:'INSERT',schema:'public',table:'registrations'}, ()=>syncRegistration()).subscribe();
+  }
 };
 
-function ensureData(){
+function ensureStructures(){
   if(!appData.players) appData.players=[];
   if(!appData.audition) appData.audition={finished:false,results:[]};
+  if(!Array.isArray(appData.audition.results)) appData.audition.results=[];
   if(!Array.isArray(appData.rounds)) appData.rounds=[];
 }
 
-/* --- Cloud --- */
+/* ============= Supabase Sync ============= */
 async function loadFromCloud(){
-  try{ const {data}=await sb.from('game_state').select('data').eq('id',1).maybeSingle(); if(data?.data) appData=data.data; }catch(e){console.error(e);}
+  try{
+    const {data} = await sb.from('game_state').select('data').eq('id',1).maybeSingle();
+    if(data && data.data) appData = data.data;
+  }catch(e){console.error(e);}
 }
-async function saveToCloud(){ if(sb) await sb.from('game_state').upsert({id:1,data:appData}); }
+async function saveToCloud(){
+  if(!sb) return;
+  await sb.from('game_state').upsert({id:1,data:appData});
+}
 async function syncRegistration(){
-  if(!sb){ alert("未配置数据库"); return; }
-  const {data}=await sb.from('registrations').select('*').eq('processed',false);
+  if(!sb){ alert("未配置 Supabase"); return; }
+  const {data} = await sb.from('registrations').select('*').eq('processed',false);
   if(data && data.length){
     data.forEach(row=>{
       if(!appData.players.some(p=>p.id===row.player_id)){
@@ -228,34 +235,26 @@ async function syncRegistration(){
       }
     });
     await sb.from('registrations').update({processed:true}).in('id',data.map(d=>d.id));
-    alert(`已同步 ${data.length} 人`);
+    alert(`成功接收 ${data.length} 位新选手`);
     refreshUI();
     saveToCloud();
-  } else alert('暂无新报名');
+  } else alert("暂无新报名");
 }
 function refreshUI(){ 
     renderPlayerManager(); 
-    if(!appData.audition.finished) {
-        syncAuditionList(); 
-        renderScoreTable(false);
-    }
+    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(false); }
 }
 
-/* --- Player --- */
+/* ============= Players ============= */
 function addPlayer(){ 
     appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); 
     renderPlayerManager(); 
-    // 新增：添加时立即同步海选
-    if(!appData.audition.finished) {
-        syncAuditionList();
-        renderScoreTable(false);
-    }
+    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(false); }
     saveToCloud(); 
 }
-
 function renderPlayerManager(){
-  const term=document.getElementById('searchPlayer').value.toLowerCase();
-  const tb=document.getElementById('playerListBody'); tb.innerHTML='';
+  const term = document.getElementById('searchPlayer').value.toLowerCase();
+  const tb = document.getElementById('playerListBody'); tb.innerHTML='';
   appData.players.forEach((p,i)=>{
     if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
     tb.innerHTML += `<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td>
@@ -265,65 +264,48 @@ function renderPlayerManager(){
   });
   document.getElementById('totalCount').innerText = appData.players.length;
 }
-
-// 新增：统一更新函数，确保联动
 function updatePlayerInfo(idx, field, val) {
     appData.players[idx][field] = val;
-    if(!appData.audition.finished) {
-        syncAuditionList();
-        renderScoreTable(false);
-    }
+    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(false); }
     saveToCloud();
 }
-
 function removePlayer(i){ 
-    if(confirm('删?')) { 
-        appData.players.splice(i,1); 
-        refreshUI();
-        saveToCloud(); 
-    } 
+    if(confirm('删?')) { appData.players.splice(i,1); refreshUI(); saveToCloud(); } 
 }
-
 function resetGameOnly(){
-  if(confirm("【重置比赛】保留选手，清空海选和对战？")){
+  if(confirm("【重置比赛】保留选手，清空比赛？")){
     appData.audition = { finished:false, results:[] };
     appData.rounds = [];
     refreshUI(); saveToCloud();
   }
 }
 
-/* --- Audition --- */
+/* ============= Audition ============= */
 function syncAuditionList(){
   if(appData.audition.finished) return;
   const scoreMap = {};
-  // 保留旧分数
   appData.audition.results.forEach(r => scoreMap[r.id] = r.scores || []);
-  
-  // 重建列表
   appData.audition.results = appData.players.map(p => ({
     id: p.id,
     name: p.name,
     avatar: p.avatar||DEFAULT_AVATAR,
-    scores: scoreMap[p.id] || [], // 恢复分数
+    scores: scoreMap[p.id] || [],
     avg: 0,
     rank: 0
   }));
 }
-
 function renderScoreTable(sort){
-  ensureData();
+  ensureStructures();
   const judges = parseInt(document.getElementById('judgeCount').value) || 3;
   appData.judgeCount = judges;
   document.getElementById('scoreHeader').innerHTML = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>` + Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('');
   
-  // 计算平均分 (总分/裁判数)
   appData.audition.results.forEach(p=>{
     let sum=0, c=0; 
     for(let i=0;i<judges;i++){ 
         let v=parseFloat(p.scores?.[i]); 
         if(!isNaN(v)){ sum+=v; c++; }
     }
-    // 修复：除以实际打分人数 c
     p.avg = c>0 ? sum/c : 0;
   });
 
@@ -340,18 +322,71 @@ function renderScoreTable(sort){
 }
 function onScoreInput(pid,idx,val){ 
     const p=appData.audition.results.find(x=>x.id===pid); 
-    if(p){ 
-        if(!p.scores)p.scores=[]; 
-        p.scores[idx]=val; 
-        saveToCloud(); 
-        // 实时更新平均分显示 (可选)
-    } 
+    if(p){ if(!p.scores)p.scores=[]; p.scores[idx]=val; saveToCloud(); } 
 }
 
+// 核心修复：不足32人自动补位 BYE
+function finalizeAudition(){
+  if(appData.audition.finished){ alert('已锁定'); return; }
+  renderScoreTable(true); // 先排序
+  
+  let top32 = appData.audition.results.slice(0,32);
+  const currentCount = top32.length;
+  
+  // 补位逻辑
+  if(currentCount < 32){
+    const need = 32 - currentCount;
+    if(!confirm(`当前仅 ${currentCount} 人，系统将自动填充 ${need} 个 'BYE' (轮空) 以凑齐 32 强。\n\n是否继续？`)) return;
+    
+    for(let i=0; i<need; i++){
+        top32.push({
+            id: 'BYE', 
+            name: 'BYE', 
+            avatar: DEFAULT_AVATAR, 
+            isBye: true, 
+            scores: [], 
+            avg: 0, 
+            rank: 999 
+        });
+    }
+  } else {
+      if(!confirm("确定锁定海选分数并生成 32 强对阵？")) return;
+  }
+
+  appData.audition.finished = true;
+  appData.audition.results = top32;
+
+  // 1vs32, 2vs31...
+  const seed = [
+    [1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],
+    [3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]
+  ];
+
+  appData.rounds = []; 
+  // 生成第一轮
+  const matches = seed.map((pair,i)=>({
+    id:i+1,
+    p1: top32[pair[0]-1],
+    p2: top32[pair[1]-1],
+    winnerId: null
+  }));
+  appData.rounds[0] = { matches };
+
+  // 自动让 BYE 的对手获胜
+  appData.rounds[0].matches.forEach(m=>{
+    if(m.p1.isBye && !m.p2.isBye) m.winnerId=m.p2.id;
+    if(m.p2.isBye && !m.p1.isBye) m.winnerId=m.p1.id;
+  });
+
+  saveToCloud();
+  refreshBattlePanels();
+  switchTab(2);
+}
+
+// 导出 PDF
 function exportAuditionPDF() {
     const judges = appData.judgeCount;
     let list = [...appData.audition.results].sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
-    
     let rows = list.map((p, i) => {
         const isPromoted = (i+1) <= 32;
         const bg = isPromoted ? 'background-color: #d1fae5; font-weight: bold;' : ''; 
@@ -359,29 +394,11 @@ function exportAuditionPDF() {
         const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc; padding:5px;">${p.scores[j] || '-'}</td>`).join('');
         return `<tr style="${bg}"><td style="border:1px solid #ccc; padding:5px;">${i+1}</td><td style="border:1px solid #ccc; padding:5px;">${p.id}</td><td style="border:1px solid #ccc; padding:5px; text-align:left;">${p.name}</td>${scores}<td style="border:1px solid #ccc; padding:5px;">${Number(p.avg).toFixed(2)}</td><td style="border:1px solid #ccc; padding:5px; color:${isPromoted?'green':'#999'}">${status}</td></tr>`;
     }).join('');
-
-    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const win = window.open('', '_blank'); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 500);
 }
 
-function finalizeAudition(){
-  if(appData.audition.finished){ alert('Locked.'); return; }
-  renderScoreTable(true);
-  let top32 = appData.audition.results.slice(0,32);
-  if(top32.length < 32){
-    if(!confirm(`不足32人(当前${top32.length})，填充BYE继续？`)) return;
-    const need = 32 - top32.length;
-    for(let i=0;i<need;i++) top32.push({id:'BYE',name:'BYE (轮空)',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:0});
-  }
-  appData.audition.finished = true;
-  appData.audition.results = top32;
-  const seed = [[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
-  appData.rounds[0] = { matches: seed.map((pair,i)=>({ id:i+1, p1:top32[pair[0]-1], p2:top32[pair[1]-1], winnerId:null })) };
-  appData.rounds[0].matches.forEach(m=>{ if(m.p1.isBye) m.winnerId=m.p2.id; if(m.p2.isBye) m.winnerId=m.p1.id; });
-  saveToCloud(); refreshUI(); switchTab(2);
-}
-
-/* --- Battle --- */
+/* ============= Battle & Display ============= */
 function createBattlePanels(){
   document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`
     <div class="panel" id="panel${cfg.tabId}">
@@ -413,9 +430,10 @@ function refreshBattlePanels(){
       const locked = !!appData.rounds[idx+1];
       const cl1 = locked?'':`onclick="setWin(${idx},${i},'${p1.id}')"`;
       const cl2 = locked?'':`onclick="setWin(${idx},${i},'${p2.id}')"`;
+      // 修复：不直接传中文名，改传索引，在 openVSScreen 里解包
       box.innerHTML += `
       <div class="match-card">
-        <div class="match-tools"><button class="btn btn-small btn-dark" onclick="openVSScreen('${escape(p1.name)}','${p1.id}','${p1.avatar}','${escape(p2.name)}','${p2.id}','${p2.avatar}')">VS</button></div>
+        <div class="match-tools"><button class="btn btn-small btn-dark" onclick="openVS('${idx}','${i}')">VS</button></div>
         <div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${cl1}><img src="${p1.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p1.name}</div><div class="fighter-id">#${p1.id}</div></div>
         <div class="vs-tag">VS</div>
         <div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${cl2}><img src="${p2.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p2.name}</div><div class="fighter-id">#${p2.id}</div></div>
@@ -439,12 +457,15 @@ function nextRound(idx){
   saveToCloud(); refreshUI(); switchTab(idx+3);
 }
 
-/* ============= Display ============= */
-function openVSScreen(n1,id1,av1,n2,id2,av2){
-  document.getElementById('vsName1').innerText=unescape(n1); document.getElementById('vsId1').innerText='#'+id1; document.getElementById('vsAvatar1').src=av1||DEFAULT_AVATAR;
-  document.getElementById('vsName2').innerText=unescape(n2); document.getElementById('vsId2').innerText='#'+id2; document.getElementById('vsAvatar2').src=av2||DEFAULT_AVATAR;
+// 修复后的 VS 大屏调用：通过索引查找，不传字符串避免乱码
+function openVS(rIdx, mIdx){
+  const m = appData.rounds[rIdx].matches[mIdx];
+  const p1 = m.p1, p2 = m.p2;
+  document.getElementById('vsName1').innerText=p1.name; document.getElementById('vsId1').innerText='#'+p1.id; document.getElementById('vsAvatar1').src=p1.avatar||DEFAULT_AVATAR;
+  document.getElementById('vsName2').innerText=p2.name; document.getElementById('vsId2').innerText='#'+p2.id; document.getElementById('vsAvatar2').src=p2.avatar||DEFAULT_AVATAR;
   document.getElementById('vsScreen').style.display='flex';
 }
+
 function showCeremony(){
   const fr = appData.rounds[4];
   if(!fr || !fr.matches[0].winnerId){ alert('请先决出冠军'); return; }
@@ -462,7 +483,7 @@ function showCeremony(){
   fireConfetti();
 }
 function createCeremonyBlock(player, rankClass, label){
-  return `<div class="rank-col ${rankClass}">${rankClass==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${player.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${escape(player.name)}</div><div class="p-id">#${player.id}</div><div class="p-rank">${label}</div></div></div>`;
+  return `<div class="rank-col ${rankClass}">${rankClass==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${player.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${player.name}</div><div class="p-id">#${player.id}</div><div class="p-rank">${label}</div></div></div>`;
 }
 function fireConfetti(){ confetti({particleCount:150,spread:100,origin:{y:0.6}}); }
 function switchTab(n){ document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
