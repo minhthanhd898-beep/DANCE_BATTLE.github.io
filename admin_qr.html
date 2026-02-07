@@ -63,7 +63,7 @@
   .fighter.loser { opacity:0.3; filter:grayscale(1); }
   .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
-  /* Popups (Important: display:none by default) */
+  /* Popups */
   #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
   
   /* VS Screen */
@@ -120,15 +120,14 @@
   <div class="panel active" id="panel0">
     <div class="status-bar">
       <div>
-        <input id="searchPlayer" style="background:transparent;border:none;border-bottom:2px solid var(--cyan);width:200px;" placeholder="搜索..." oninput="renderPlayerManager()">
+        <input id="searchPlayer" class="search-box" style="background:transparent;border:none;border-bottom:2px solid var(--cyan);color:var(--cyan);width:200px;" placeholder="搜索姓名或号码..." oninput="renderPlayerManager()">
         <span style="margin-left:10px;">总人数: <b id="totalCount">0</b></span>
       </div>
       <div>
         <button class="btn btn-green" onclick="syncRegistration()">接收报名</button>
-        <button class="btn btn-blue" onclick="showQR()">二维码</button>
-        <button class="btn btn-pink" onclick="addPlayer()">手动添加</button>
-        <!-- 🔴 改良后的重置按钮 -->
-        <button class="btn btn-dark" onclick="resetGameOnly()">重置比赛(保留选手)</button>
+        <button class="btn btn-blue" onclick="showQR()">报名二维码</button>
+        <button class="btn btn-pink" onclick="addPlayer()">添加选手</button>
+        <button class="btn btn-dark" onclick="resetGameOnly()">重置比赛</button>
       </div>
     </div>
     <table>
@@ -141,11 +140,10 @@
   <div class="panel" id="panel1">
     <div class="status-bar">
       <div>
-        裁判数：<input type="number" id="judgeCount" value="3" min="1" max="5" style="width:50px" onchange="renderScoreTable(true)">
+        裁判数：<input type="number" id="judgeCount" value="3" min="1" max="5" style="width:60px" onchange="renderScoreTable(true)">
       </div>
       <div>
         <button class="btn btn-blue" onclick="renderScoreTable(true)">刷新排名</button>
-        <!-- 🟣 导出 PDF 按钮 -->
         <button class="btn btn-pink" onclick="exportAuditionPDF()">导出成绩单(PDF)</button>
         <button class="btn btn-green" onclick="finalizeAudition()">锁定并晋级 >></button>
       </div>
@@ -161,25 +159,25 @@
   <div id="battlePanels"></div>
 </div>
 
-<!-- 弹窗组件 (默认 display:none) -->
-<div id="vsScreen" style="display:none;">
+<!-- 弹窗组件 -->
+<div id="vsScreen">
   <div class="vs-side left"><img id="vsAvatar1" class="vs-avatar-big"><div id="vsName1" class="vs-name-big"></div><div id="vsId1" class="vs-id-big"></div></div>
   <div class="vs-center-logo">VS</div>
   <div class="vs-side right"><img id="vsAvatar2" class="vs-avatar-big"><div id="vsName2" class="vs-name-big"></div><div id="vsId2" class="vs-id-big"></div></div>
   <div class="close-btn" onclick="document.getElementById('vsScreen').style.display='none'">×</div>
 </div>
 
-<div id="ceremonyScreen" style="display:none;">
+<div id="ceremonyScreen">
   <div class="ceremony-bg"></div>
   <div class="ceremony-title">THE CHAMPIONS</div>
   <div class="close-btn" onclick="document.getElementById('ceremonyScreen').style.display='none'">×</div>
   <div class="podium" id="podiumContent"></div>
 </div>
 
-<div id="qrModal" style="display:none;">
+<div id="qrModal">
   <div id="qrcode"></div>
   <p style="color:#fff; margin-top:20px;">SCAN TO REGISTER</p>
-  <div class="close-btn" onclick="document.getElementById('qrModal').style.display='none'">×</div>
+  <div class="close-btn" onclick="document.getElementById('qrModal').style.display='none'">关闭</div>
 </div>
 
 <script>
@@ -221,32 +219,73 @@ async function loadFromCloud(){
 }
 async function saveToCloud(){ if(sb) await sb.from('game_state').upsert({id:1,data:appData}); }
 async function syncRegistration(){
-  if(!sb){alert('未配置数据库');return;}
+  if(!sb){ alert("未配置数据库"); return; }
   const {data}=await sb.from('registrations').select('*').eq('processed',false);
-  if(data&&data.length){
-    data.forEach(r=>{ if(!appData.players.some(p=>p.id===r.player_id)) appData.players.push({id:r.player_id,name:r.player_name,avatar:r.avatar||DEFAULT_AVATAR}); });
+  if(data && data.length){
+    data.forEach(row=>{
+      if(!appData.players.some(p=>p.id===row.player_id)){
+        appData.players.push({ id: row.player_id, name: row.player_name, avatar: row.avatar || DEFAULT_AVATAR });
+      }
+    });
     await sb.from('registrations').update({processed:true}).in('id',data.map(d=>d.id));
-    alert(`已同步 ${data.length} 人`); saveToCloud(); refreshUI();
+    alert(`已同步 ${data.length} 人`);
+    refreshUI();
+    saveToCloud();
   } else alert('暂无新报名');
 }
-function refreshUI(){ renderPlayerManager(); if(!appData.audition.finished) syncAuditionList(); renderScoreTable(false); refreshBattlePanels(); }
+function refreshUI(){ 
+    renderPlayerManager(); 
+    if(!appData.audition.finished) {
+        syncAuditionList(); 
+        renderScoreTable(false);
+    }
+}
 
 /* --- Player --- */
-function addPlayer(){ appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); renderPlayerManager(); saveToCloud(); }
+function addPlayer(){ 
+    appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); 
+    renderPlayerManager(); 
+    // 新增：添加时立即同步海选
+    if(!appData.audition.finished) {
+        syncAuditionList();
+        renderScoreTable(false);
+    }
+    saveToCloud(); 
+}
+
 function renderPlayerManager(){
   const term=document.getElementById('searchPlayer').value.toLowerCase();
   const tb=document.getElementById('playerListBody'); tb.innerHTML='';
   appData.players.forEach((p,i)=>{
     if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
-    tb.innerHTML+=`<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td><input value="${p.id}" oninput="appData.players[${i}].id=this.value;saveToCloud()"></td><td><input style="text-align:left;" value="${p.name}" oninput="appData.players[${i}].name=this.value;saveToCloud()"></td><td><button class="btn-small btn-dark" onclick="removePlayer(${i})">删</button></td></tr>`;
+    tb.innerHTML += `<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td>
+    <td><input value="${p.id}" oninput="updatePlayerInfo(${i}, 'id', this.value)"></td>
+    <td><input style="text-align:left;" value="${p.name}" oninput="updatePlayerInfo(${i}, 'name', this.value)"></td>
+    <td><button class="btn-small btn-dark" onclick="removePlayer(${i})">删</button></td></tr>`;
   });
-  document.getElementById('totalCount').innerText=appData.players.length;
+  document.getElementById('totalCount').innerText = appData.players.length;
 }
-function removePlayer(i){ if(confirm('删?')){appData.players.splice(i,1);refreshUI();saveToCloud();} }
 
-// 🔴 软重置
+// 新增：统一更新函数，确保联动
+function updatePlayerInfo(idx, field, val) {
+    appData.players[idx][field] = val;
+    if(!appData.audition.finished) {
+        syncAuditionList();
+        renderScoreTable(false);
+    }
+    saveToCloud();
+}
+
+function removePlayer(i){ 
+    if(confirm('删?')) { 
+        appData.players.splice(i,1); 
+        refreshUI();
+        saveToCloud(); 
+    } 
+}
+
 function resetGameOnly(){
-  if(confirm("【重置比赛】\n这会清空海选分数和对战表，但保留选手名单。\n确定吗？")){
+  if(confirm("【重置比赛】保留选手，清空海选和对战？")){
     appData.audition = { finished:false, results:[] };
     appData.rounds = [];
     refreshUI(); saveToCloud();
@@ -255,73 +294,90 @@ function resetGameOnly(){
 
 /* --- Audition --- */
 function syncAuditionList(){
-  if(appData.audition.finished)return;
-  const map={}; appData.audition.results.forEach(r=>map[r.id]=r.scores||[]);
-  appData.audition.results=appData.players.map(p=>({id:p.id,name:p.name,avatar:p.avatar||DEFAULT_AVATAR,scores:map[p.id]||[],avg:0,rank:0}));
+  if(appData.audition.finished) return;
+  const scoreMap = {};
+  // 保留旧分数
+  appData.audition.results.forEach(r => scoreMap[r.id] = r.scores || []);
+  
+  // 重建列表
+  appData.audition.results = appData.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    avatar: p.avatar||DEFAULT_AVATAR,
+    scores: scoreMap[p.id] || [], // 恢复分数
+    avg: 0,
+    rank: 0
+  }));
 }
+
 function renderScoreTable(sort){
   ensureData();
-  const judges=parseInt(document.getElementById('judgeCount').value)||3; appData.judgeCount=judges;
-  document.getElementById('scoreHeader').innerHTML=`<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>`+Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('');
+  const judges = parseInt(document.getElementById('judgeCount').value) || 3;
+  appData.judgeCount = judges;
+  document.getElementById('scoreHeader').innerHTML = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>` + Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('');
   
+  // 计算平均分 (总分/裁判数)
   appData.audition.results.forEach(p=>{
-    let s=0,c=0; for(let i=0;i<judges;i++){ let v=parseFloat(p.scores[i]); if(!isNaN(v)){s+=v;c++}}
-    p.avg=c?s/c:0;
+    let sum=0, c=0; 
+    for(let i=0;i<judges;i++){ 
+        let v=parseFloat(p.scores?.[i]); 
+        if(!isNaN(v)){ sum+=v; c++; }
+    }
+    // 修复：除以实际打分人数 c
+    p.avg = c>0 ? sum/c : 0;
   });
+
   if(sort||appData.audition.finished){
-    appData.audition.results.sort((a,b)=>b.avg-a.avg||a.id.localeCompare(b.id));
+    appData.audition.results.sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
     appData.audition.results.forEach((p,i)=>p.rank=i+1);
   }
-  const tb=document.getElementById('scoreBody'); tb.innerHTML='';
-  appData.audition.results.forEach(p=>{
-    const top=p.rank<=32;
-    tb.innerHTML+=`<tr ${top?'class="top-rank"':''}><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td class="rank-num">${p.rank||'-'}</td><td>${p.id}</td><td style="text-align:left;">${p.name}</td><td style="color:${top?'var(--cyan)':'var(--pink)'}">${p.avg.toFixed(2)}</td>${Array(judges).fill(0).map((_,j)=>`<td><input type="number" step="0.1" value="${p.scores[j]||''}" ${appData.audition.finished?'disabled':''} oninput="scoreIn('${p.id}',${j},this.value)"></td>`).join('')}</tr>`;
+  
+  const tb = document.getElementById('scoreBody'); tb.innerHTML='';
+  appData.audition.results.forEach((p)=>{
+    const isTop32 = p.rank>0 && p.rank<=32;
+    tb.innerHTML += `<tr ${isTop32?'class="top-rank"':''}><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td class="rank-num">${p.rank||'-'}</td><td>${p.id}</td><td style="text-align:left;">${p.name}</td><td style="color:${isTop32?'var(--cyan)':'var(--pink)'};font-weight:bold;">${p.avg.toFixed(2)}</td>${Array(judges).fill(0).map((_,j)=>`<td><input type="number" step="0.1" value="${p.scores?.[j]??''}" ${appData.audition.finished?'disabled':''} oninput="onScoreInput('${p.id}',${j},this.value)"></td>`).join('')}</tr>`;
   });
 }
-function scoreIn(id,idx,v){ const p=appData.audition.results.find(x=>x.id===id); if(p){p.scores[idx]=v;saveToCloud();} }
+function onScoreInput(pid,idx,val){ 
+    const p=appData.audition.results.find(x=>x.id===pid); 
+    if(p){ 
+        if(!p.scores)p.scores=[]; 
+        p.scores[idx]=val; 
+        saveToCloud(); 
+        // 实时更新平均分显示 (可选)
+    } 
+}
 
-// 🟣 导出海选 PDF (中文支持)
 function exportAuditionPDF() {
     const judges = appData.judgeCount;
-    // 确保排序
     let list = [...appData.audition.results].sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
     
-    // 生成打印用HTML
     let rows = list.map((p, i) => {
-        const rank = i + 1;
-        const isPromoted = rank <= 32;
-        const bg = isPromoted ? 'background-color: #d1fae5; font-weight: bold;' : '';
+        const isPromoted = (i+1) <= 32;
+        const bg = isPromoted ? 'background-color: #d1fae5; font-weight: bold;' : ''; 
         const status = isPromoted ? '✅ PROMOTED' : '';
-        const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc;padding:5px;">${p.scores[j]||'-'}</td>`).join('');
-        return `<tr style="${bg}"><td style="border:1px solid #ccc;padding:5px;">${rank}</td><td style="border:1px solid #ccc;padding:5px;">${p.id}</td><td style="border:1px solid #ccc;padding:5px;">${p.name}</td>${scores}<td style="border:1px solid #ccc;padding:5px;">${p.avg.toFixed(2)}</td><td style="border:1px solid #ccc;padding:5px;">${status}</td></tr>`;
+        const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc; padding:5px;">${p.scores[j] || '-'}</td>`).join('');
+        return `<tr style="${bg}"><td style="border:1px solid #ccc; padding:5px;">${i+1}</td><td style="border:1px solid #ccc; padding:5px;">${p.id}</td><td style="border:1px solid #ccc; padding:5px; text-align:left;">${p.name}</td>${scores}<td style="border:1px solid #ccc; padding:5px;">${Number(p.avg).toFixed(2)}</td><td style="border:1px solid #ccc; padding:5px; color:${isPromoted?'green':'#999'}">${status}</td></tr>`;
     }).join('');
 
-    const html = `
-    <html><head><title>AUDITION REPORT</title></head>
-    <body style="font-family: sans-serif; padding: 20px;">
-        <h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1>
-        <table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;">
-            <tr style="background:#eee;"><th style="border:1px solid #ccc;padding:8px;">RANK</th><th style="border:1px solid #ccc;padding:8px;">ID</th><th style="border:1px solid #ccc;padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc;padding:8px;">SCORES</th><th style="border:1px solid #ccc;padding:8px;">AVG</th><th style="border:1px solid #ccc;padding:8px;">STATUS</th></tr>
-            ${rows}
-        </table>
-    </body></html>`;
-    const win = window.open('','_blank'); win.document.write(html); win.document.close(); setTimeout(()=>win.print(),500);
+    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const win = window.open('', '_blank'); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 500);
 }
 
 function finalizeAudition(){
-  if(appData.audition.finished){alert('Locked');return;}
+  if(appData.audition.finished){ alert('Locked.'); return; }
   renderScoreTable(true);
-  let top32=appData.audition.results.slice(0,32);
-  if(top32.length<32){
-    if(!confirm(`仅 ${top32.length} 人，填充 BYE 继续？`))return;
-    const need=32-top32.length;
+  let top32 = appData.audition.results.slice(0,32);
+  if(top32.length < 32){
+    if(!confirm(`不足32人(当前${top32.length})，填充BYE继续？`)) return;
+    const need = 32 - top32.length;
     for(let i=0;i<need;i++) top32.push({id:'BYE',name:'BYE (轮空)',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:0});
   }
-  appData.audition.finished=true;
-  appData.audition.results=top32;
-  const seed=[[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
-  appData.rounds[0]={matches:seed.map((p,i)=>({id:i+1,p1:top32[p[0]-1],p2:top32[p[1]-1],winnerId:null}))};
-  appData.rounds[0].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
+  appData.audition.finished = true;
+  appData.audition.results = top32;
+  const seed = [[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
+  appData.rounds[0] = { matches: seed.map((pair,i)=>({ id:i+1, p1:top32[pair[0]-1], p2:top32[pair[1]-1], winnerId:null })) };
+  appData.rounds[0].matches.forEach(m=>{ if(m.p1.isBye) m.winnerId=m.p2.id; if(m.p2.isBye) m.winnerId=m.p1.id; });
   saveToCloud(); refreshUI(); switchTab(2);
 }
 
@@ -329,66 +385,89 @@ function finalizeAudition(){
 function createBattlePanels(){
   document.getElementById('battlePanels').innerHTML = ROUND_CONFIG.map(cfg=>`
     <div class="panel" id="panel${cfg.tabId}">
-      <div class="status-bar"><div>${cfg.name}</div>
-        <div><button class="btn btn-green" id="nextBtn${cfg.idx}" onclick="nextRound(${cfg.idx})">下一轮</button>${cfg.idx===4?'<button class="btn btn-pink" onclick="showCeremony()">🏆 颁奖</button>':''}</div>
+      <div class="status-bar">
+        <div>${cfg.name}</div>
+        <div>
+          <button class="btn btn-green" id="nextBtn${cfg.idx}" onclick="nextRound(${cfg.idx})">下一轮</button>
+          ${cfg.idx===4 ? '<button class="btn btn-pink" onclick="showCeremony()">🏆 颁奖</button>' : ''}
+        </div>
       </div>
-      <div class="battle-container" id="box${cfg.idx}"></div>
+      <div class="battle-container" id="battleBox${cfg.idx}"></div>
     </div>`).join('');
 }
 function refreshBattlePanels(){
-  ensureData();
   ROUND_CONFIG.forEach(cfg=>{
-    const idx=cfg.idx, round=appData.rounds[idx], box=document.getElementById('box'+idx), btn=document.getElementById('nextBtn'+idx);
-    if(!box)return; box.innerHTML='';
-    if(!round||!round.matches){ if(btn){btn.disabled=true;btn.textContent='...';} return; }
-    const done=round.matches.every(m=>m.winnerId);
-    if(btn){ btn.disabled=!done; if(idx===4)btn.style.display='none'; }
+    const idx = cfg.idx;
+    const round = appData.rounds[idx];
+    const box = document.getElementById('battleBox'+idx);
+    const btn = document.getElementById('nextBtn'+idx);
+    if(!box) return;
+    box.innerHTML = '';
+    if(!round || !round.matches) { if(btn) { btn.disabled=true; btn.textContent = '等待上一轮'; } return; }
+    const done = round.matches.every(m=>m.winnerId);
+    if(btn) { btn.disabled = !done; if(idx===4) btn.style.display='none'; }
+    
     round.matches.forEach((m,i)=>{
-      const p1=m.p1||{}, p2=m.p2||{}, w1=m.winnerId===p1.id, w2=m.winnerId===p2.id, lk=!!appData.rounds[idx+1];
-      const c1=lk?'':`onclick="setWin(${idx},${i},'${p1.id}')"`, c2=lk?'':`onclick="setWin(${idx},${i},'${p2.id}')"`;
-      box.innerHTML+=`<div class="match-card">
-        <div class="match-tools"><button class="btn-small btn-dark" onclick="openVS('${escape(p1.name)}','${p1.id}','${p1.avatar}','${escape(p2.name)}','${p2.id}','${p2.avatar}')">VS</button></div>
-        <div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${c1}><img src="${p1.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p1.name}</div></div>
+      const p1 = m.p1||{}, p2 = m.p2||{};
+      const w1 = m.winnerId===p1.id, w2 = m.winnerId===p2.id;
+      const locked = !!appData.rounds[idx+1];
+      const cl1 = locked?'':`onclick="setWin(${idx},${i},'${p1.id}')"`;
+      const cl2 = locked?'':`onclick="setWin(${idx},${i},'${p2.id}')"`;
+      box.innerHTML += `
+      <div class="match-card">
+        <div class="match-tools"><button class="btn btn-small btn-dark" onclick="openVSScreen('${escape(p1.name)}','${p1.id}','${p1.avatar}','${escape(p2.name)}','${p2.id}','${p2.avatar}')">VS</button></div>
+        <div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${cl1}><img src="${p1.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p1.name}</div><div class="fighter-id">#${p1.id}</div></div>
         <div class="vs-tag">VS</div>
-        <div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${c2}><img src="${p2.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p2.name}</div></div>
+        <div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${cl2}><img src="${p2.avatar||DEFAULT_AVATAR}"><div class="fighter-name">${p2.name}</div><div class="fighter-id">#${p2.id}</div></div>
       </div>`;
     });
   });
 }
-function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId=w; saveToCloud(); refreshBattlePanels(); }
-function nextRound(i){
-  if(i===4)return; if(!confirm('Next?'))return;
-  const cur=appData.rounds[i].matches, next=[];
-  for(let k=0;k<cur.length;k+=2){
-    const w1=cur[k].winnerId===cur[k].p1.id?cur[k].p1:cur[k].p2;
-    const w2=cur[k+1].winnerId===cur[k+1].p1.id?cur[k+1].p1:cur[k+1].p2;
-    next.push({id:next.length+1,p1:w1,p2:w2,winnerId:null});
+function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId = w; saveToCloud(); refreshBattlePanels(); }
+function nextRound(idx){
+  if(idx===4)return;
+  if(!confirm('生成下一轮？'))return;
+  const cur = appData.rounds[idx].matches;
+  const next = [];
+  for(let i=0; i<cur.length; i+=2){
+    const w1 = cur[i].winnerId===cur[i].p1.id ? cur[i].p1 : cur[i].p2;
+    const w2 = cur[i+1].winnerId===cur[i+1].p1.id ? cur[i+1].p1 : cur[i+1].p2;
+    next.push({ id:next.length+1, p1:w1, p2:w2, winnerId:null });
   }
-  appData.rounds[i+1]={matches:next}; 
-  appData.rounds[i+1].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
-  saveToCloud(); refreshUI(); switchTab(i+3);
+  appData.rounds[idx+1] = { matches:next };
+  appData.rounds[idx+1].matches.forEach(m=>{ if(m.p1.isBye) m.winnerId=m.p2.id; if(m.p2.isBye) m.winnerId=m.p1.id; });
+  saveToCloud(); refreshUI(); switchTab(idx+3);
 }
 
-/* --- Display --- */
-function openVS(n1,i1,a1,n2,i2,a2){
-  document.getElementById('vsName1').innerText=unescape(n1); document.getElementById('vsId1').innerText='#'+i1; document.getElementById('vsAvatar1').src=a1||DEFAULT_AVATAR;
-  document.getElementById('vsName2').innerText=unescape(n2); document.getElementById('vsId2').innerText='#'+i2; document.getElementById('vsAvatar2').src=a2||DEFAULT_AVATAR;
+/* ============= Display ============= */
+function openVSScreen(n1,id1,av1,n2,id2,av2){
+  document.getElementById('vsName1').innerText=unescape(n1); document.getElementById('vsId1').innerText='#'+id1; document.getElementById('vsAvatar1').src=av1||DEFAULT_AVATAR;
+  document.getElementById('vsName2').innerText=unescape(n2); document.getElementById('vsId2').innerText='#'+id2; document.getElementById('vsAvatar2').src=av2||DEFAULT_AVATAR;
   document.getElementById('vsScreen').style.display='flex';
 }
 function showCeremony(){
-  const fr=appData.rounds[4]; if(!fr||!fr.matches[0].winnerId){alert('No Winner');return;}
-  const m=fr.matches[0], ch=m.winnerId===m.p1.id?m.p1:m.p2, ru=m.winnerId===m.p1.id?m.p2:m.p1;
-  const sr=appData.rounds[3], th=[];
-  if(sr) sr.matches.forEach(sm=>{if(sm.winnerId){const l=sm.winnerId===sm.p1.id?sm.p2:sm.p1; if(l&&l.id!=='BYE')th.push(l)}});
-  const p=document.getElementById('podiumContent'); p.innerHTML='';
-  p.innerHTML+=mkPod(ru,'second','2ND'); p.innerHTML+=mkPod(ch,'first','WINNER'); th.forEach(t=>p.innerHTML+=mkPod(t,'third','3RD'));
-  document.getElementById('ceremonyScreen').style.display='flex'; fireConfetti();
+  const fr = appData.rounds[4];
+  if(!fr || !fr.matches[0].winnerId){ alert('请先决出冠军'); return; }
+  const m = fr.matches[0];
+  const champ = m.winnerId===m.p1.id?m.p1:m.p2;
+  const run = m.winnerId===m.p1.id?m.p2:m.p1;
+  const sr = appData.rounds[3];
+  const thirds=[];
+  if(sr){ sr.matches.forEach(sm=>{ if(sm.winnerId){ const l=sm.winnerId===sm.p1.id?sm.p2:sm.p1; if(l&&l.id!=='BYE') thirds.push(l); } }); }
+  const p = document.getElementById('podiumContent'); p.innerHTML='';
+  if(run) p.innerHTML += createCeremonyBlock(run,'second','2ND');
+  p.innerHTML += createCeremonyBlock(champ,'first','WINNER');
+  thirds.forEach(t=> p.innerHTML += createCeremonyBlock(t,'third','3RD'));
+  document.getElementById('ceremonyScreen').style.display='flex';
+  fireConfetti();
 }
-function mkPod(p,c,t){return `<div class="rank-col ${c}">${c==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${p.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${p.name}</div><div class="p-id">#${p.id}</div><div class="p-rank">${t}</div></div></div>`;}
+function createCeremonyBlock(player, rankClass, label){
+  return `<div class="rank-col ${rankClass}">${rankClass==='first'?'<div class="crown">👑</div>':''}<div class="avatar-box"><img src="${player.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${escape(player.name)}</div><div class="p-id">#${player.id}</div><div class="p-rank">${label}</div></div></div>`;
+}
 function fireConfetti(){ confetti({particleCount:150,spread:100,origin:{y:0.6}}); }
 function switchTab(n){ document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
 function showQR(){ const u=prompt("Register URL:",window.location.href.replace('admin_qr.html','register.html')); if(u){document.getElementById('qrcode').innerHTML="";new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256});document.getElementById('qrModal').style.display='flex';} }
-function clearAll(){if(confirm('RESET ALL?')){appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]};saveToCloud();refreshUI();}}
+function clearAll(){ if(confirm('RESET ALL?')){appData={players:[],audition:{finished:false,results:[]},judgeCount:3,rounds:[]};saveToCloud();refreshUI();} }
 </script>
 </body>
 </html>
