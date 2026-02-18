@@ -369,7 +369,7 @@ function exportAuditionPDF() {
         const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc; padding:5px;">${p.scores[j] || '-'}</td>`).join('');
         return `<tr style="${bg}"><td style="border:1px solid #ccc; padding:5px;">${i+1}</td><td style="border:1px solid #ccc; padding:5px;">${p.id}</td><td style="border:1px solid #ccc; padding:5px; text-align:left;">${p.name}</td>${scores}<td style="border:1px solid #ccc; padding:5px;">${Number(p.avg).toFixed(2)}</td><td style="border:1px solid #ccc; padding:5px; color:${isPromoted?'green':'#999'}">${status}</td></tr>`;
     }).join('');
-    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">超燃 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const win = window.open('', '_blank'); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 500);
 }
 
@@ -538,3 +538,4 @@ function clearAll(){ if(confirm('RESET ALL?')){appData={players:[],audition:{fin
 </script>
 </body>
 </html>
+
