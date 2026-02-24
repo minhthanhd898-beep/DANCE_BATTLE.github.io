@@ -22,6 +22,7 @@
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
   h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
   
+  /* Tabs */
   .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
   .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition:0.3s; }
   .tab:hover { background: #444; color: #fff; }
@@ -31,9 +32,12 @@
   .panel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   
+  /* Buttons */
   .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
   .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
-  .btn:disabled { background: #333 !important; color: #777 !important; cursor: not-allowed; box-shadow: none; transform: none; }
+  /* 禁用状态优化 */
+  .btn:disabled { background: #333 !important; color: #777 !important; cursor: not-allowed; box-shadow: none; transform: none; filter: grayscale(1); }
+  
   .btn-green { background: var(--lime); color: #000; }
   .btn-blue { background: var(--cyan); color: #000; }
   .btn-pink { background: var(--pink); color: #fff; }
@@ -44,6 +48,7 @@
   .status-bar { background: #000; border: 2px solid #444; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;}
   .search-input { width: 180px; border-bottom: 2px solid var(--lime); font-size: 16px; text-align: left; padding-left: 10px; color: var(--lime); }
   
+  /* Table */
   table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
   th { color: #888; font-size: 14px; border-bottom: 2px solid #333; padding: 6px; }
   td { background: #111; padding: 6px; border-top: 1px solid #222; border-bottom: 1px solid #222; vertical-align: middle; text-align: center; }
@@ -52,6 +57,7 @@
   .rank-num { font-family: 'Rubik Glitch'; font-size: 20px; color: #777; }
   .top-rank .rank-num { color: var(--cyan); text-shadow: 0 0 2px rgba(0,247,255,0.7); }
 
+  /* Battle Cards */
   .battle-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-top: 20px; }
   .match-card { position: relative; background:#000; border:2px solid #fff; display:flex; align-items:center; justify-content:space-between; padding:10px; box-shadow:5px 5px 0 #000; }
   .match-tools { position:absolute; top:5px; right:5px; z-index:10; }
@@ -62,6 +68,7 @@
   .fighter.loser { opacity:0.3; filter:grayscale(1); }
   .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
+  /* Popups */
   #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
   
   #vsScreen { flex-direction: row; align-items: center; }
@@ -74,6 +81,7 @@
   .vs-center-logo { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-family:'Rubik Glitch'; font-size:140px; color:#fff; text-shadow:0 0 30px var(--pink); pointer-events:none; }
   .close-btn { position:absolute; top:20px; right:20px; font-size:30px; color:#fff; cursor:pointer; opacity:0.6; z-index:10000; }
 
+  /* Ceremony */
   #ceremonyScreen { flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:40px; }
   .ceremony-bg { position:absolute; inset:0; background: radial-gradient(circle at 50% 20%, rgba(255,255,255,0.1) 0, #000 60%); z-index:-1; }
   .ceremony-title { position:absolute; top:40px; font-family:'Rubik Glitch'; font-size:72px; color:#fff; text-shadow:0 0 25px var(--pink); animation: glow 2s infinite alternate; }
@@ -110,8 +118,8 @@
   </header>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">选手库 (ROSTER)</div>
-    <div class="tab" onclick="switchTab(1)">海选 (AUDITION)</div>
+    <div class="tab active" onclick="switchTab(0)">选手库</div>
+    <div class="tab" onclick="switchTab(1)">海选</div>
     <div class="tab" onclick="switchTab(2)">32强</div>
     <div class="tab" onclick="switchTab(3)">16强</div>
     <div class="tab" onclick="switchTab(4)">8强</div>
@@ -124,7 +132,7 @@
     <div class="status-bar">
       <div>
         <input id="searchPlayer" class="search-input" placeholder="搜索选手库..." oninput="renderPlayerManager()">
-        <span style="margin-left:10px;">总人数: <b id="totalCount">0</b></span>
+        <span style="margin-left:10px;">Total: <b id="totalCount">0</b></span>
       </div>
       <div>
         <button class="btn btn-green" onclick="syncRegistration()">接收报名</button>
@@ -163,7 +171,6 @@
   <div id="battlePanels"></div>
 </div>
 
-<!-- 弹窗 -->
 <div id="vsScreen">
   <div class="vs-side left"><img id="vsAvatar1" class="vs-avatar-big"><div id="vsName1" class="vs-name-big"></div><div id="vsId1" class="vs-id-big"></div></div>
   <div class="vs-center-logo">VS</div>
@@ -318,7 +325,7 @@ function removePlayer(i){
 }
 
 function resetGameOnly(){
-  if(confirm("【重置比赛】保留选手，清空对战？")){
+  if(confirm("【重置比赛】保留选手库，清空海选和对战？")){
     appData.audition = { finished:false, results:[] };
     appData.rounds = [];
     refreshUI(); saveToCloud();
@@ -336,7 +343,10 @@ function renderScoreTable(sortMode){
   
   appData.audition.results.forEach(p=>{
     let sum=0, c=0; 
-    for(let i=0;i<judges;i++){ let v=parseFloat(p.scores?.[i]); if(!isNaN(v)){ sum+=v; c++; } }
+    for(let i=0;i<judges;i++){ 
+        let v=parseFloat(p.scores?.[i]); 
+        if(!isNaN(v)){ sum+=v; c++; }
+    }
     p.avg = c>0 ? sum/c : 0;
   });
 
@@ -350,6 +360,7 @@ function renderScoreTable(sortMode){
   const tb = document.getElementById('scoreBody'); tb.innerHTML='';
   appData.audition.results.forEach((p)=>{
     if(searchTerm && !p.id.toLowerCase().includes(searchTerm) && !p.name.toLowerCase().includes(searchTerm)) return;
+
     const isTop32 = p.rank>0 && p.rank<=32;
     const rankDisplay = (sortMode === 'id' && !appData.audition.finished) ? '-' : (p.rank||'-');
     const removeBtn = appData.audition.finished ? '' : `<button class="btn-small btn-dark" onclick="removeFromAudition('${p.id}')">移出</button>`;
@@ -472,30 +483,30 @@ function nextRound(idx){
   if(idx===4)return;
   if(!confirm('生成下一轮？'))return;
   
-  // 核心修复：乐观 UI 更新
-  const cur = appData.rounds[idx].matches;
-  const next = [];
-  for(let i=0; i<cur.length; i+=2){
-    const w1 = getWinnerObj(cur[i]);
-    const w2 = getWinnerObj(cur[i+1]);
-    next.push({ id:next.length+1, p1:w1, p2:w2, winnerId:null });
-  }
-  
-  // 1. 本地立即更新
-  appData.rounds[idx+1] = { matches:next };
-  
-  // 2. 自动判定 BYE
-  appData.rounds[idx+1].matches.forEach(m=>{ 
-      if(m.p1.isBye) m.winnerId=m.p2.id; 
-      if(m.p2.isBye) m.winnerId=m.p1.id; 
-  });
-  
-  // 3. 立即重绘界面
-  refreshBattlePanels();
-  switchTab(idx+3);
-  
-  // 4. 后台静默保存，不阻塞UI
-  saveToCloud(); 
+  // 🟢 极速响应：先UI后上传
+  const btn = document.getElementById('nextBtn'+idx);
+  if(btn) { btn.innerText="处理中..."; btn.disabled=true; }
+
+  setTimeout(() => {
+      const cur = appData.rounds[idx].matches;
+      const next = [];
+      for(let i=0; i<cur.length; i+=2){
+        const w1 = getWinnerObj(cur[i]);
+        const w2 = getWinnerObj(cur[i+1]);
+        next.push({ id:next.length+1, p1:w1, p2:w2, winnerId:null });
+      }
+      appData.rounds[idx+1] = { matches:next };
+      
+      // Auto-win for BYE
+      appData.rounds[idx+1].matches.forEach(m=>{ 
+          if(m.p1.isBye) m.winnerId=m.p2.id; 
+          if(m.p2.isBye) m.winnerId=m.p1.id; 
+      });
+      
+      refreshBattlePanels();
+      switchTab(idx+3);
+      saveToCloud(); // Silent save
+  }, 50);
 }
 
 function getWinnerObj(m) {
