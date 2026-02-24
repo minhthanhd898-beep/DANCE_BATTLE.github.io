@@ -4,43 +4,52 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PLAYER SIGN UP</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Permanent+Marker&family=Rubik+Glitch&display=swap" rel="stylesheet">
 <style>
   :root { --neon-pink: #ff0055; --neon-cyan: #00f7ff; --neon-lime: #ccff00; --bg-dark: #111; }
-  body { background: var(--bg-dark); background-image: linear-gradient(335deg, rgba(255,255,255,0.05) 23px, transparent 23px), linear-gradient(155deg, rgba(255,255,255,0.05) 23px, transparent 23px); background-size: 58px 58px; color: #fff; font-family: "Microsoft YaHei", sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-  h1 { font-family: 'Rubik Glitch', cursive; font-size: 42px; color: #fff; text-shadow: 3px 3px 0 var(--neon-pink); margin-bottom: 10px; text-align: center; line-height: 1; }
-  p { font-family: 'Black Ops One', cursive; color: var(--neon-lime); margin-bottom: 30px; letter-spacing: 2px; text-align: center; }
-  .form-group { width: 100%; max-width: 400px; margin-bottom: 20px; }
-  label { display: block; font-family: 'Permanent Marker', cursive; font-size: 18px; color: var(--neon-cyan); margin-bottom: 8px; margin-left: 5px; }
-  input[type="text"] { width: 100%; padding: 15px; font-size: 20px; background: #000; border: 3px solid #333; color: #fff; font-family: 'Black Ops One', cursive; text-align: center; border-radius: 10px; box-sizing: border-box; transition: 0.3s; outline: none; }
-  input:focus { border-color: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink); }
+  body { background: var(--bg-dark); color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
   
-  /* 头像上传样式 */
-  .avatar-upload { width: 150px; height: 150px; border: 3px dashed var(--neon-lime); border-radius: 50%; margin: 0 auto 20px auto; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; position: relative; background: #222; }
+  h1 { font-size: 42px; color: #fff; text-shadow: 2px 2px 0 var(--neon-pink); margin-bottom: 5px; text-align: center; font-style: italic; font-weight: 900; }
+  p { color: var(--neon-lime); margin-bottom: 25px; letter-spacing: 1px; text-align: center; font-weight: bold; }
+  
+  .room-tag { background: var(--neon-pink); color: #fff; padding: 4px 12px; border-radius: 4px; font-weight: bold; position: absolute; top: 15px; right: 15px; font-size: 14px; }
+  
+  .form-group { width: 100%; max-width: 400px; margin-bottom: 20px; }
+  label { display: block; font-size: 16px; color: var(--neon-cyan); margin-bottom: 8px; margin-left: 5px; font-weight: bold; }
+  
+  input[type="text"] { width: 100%; padding: 15px; font-size: 20px; background: #000; border: 3px solid #333; color: #fff; font-weight: bold; text-align: center; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.3s; }
+  input:focus { border-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+  
+  .avatar-upload { width: 140px; height: 140px; border: 3px dashed var(--neon-lime); border-radius: 50%; margin: 0 auto 20px auto; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; position: relative; background: #222; }
   .avatar-upload img { width: 100%; height: 100%; object-fit: cover; display: none; }
-  .avatar-text { color: #888; font-size: 12px; text-align: center; pointer-events: none; }
+  .avatar-text { color: #888; font-size: 12px; text-align: center; pointer-events: none; font-weight: bold; }
   input[type="file"] { display: none; }
-
-  button { width: 100%; max-width: 400px; padding: 20px; font-family: 'Rubik Glitch', cursive; font-size: 32px; background: var(--neon-lime); color: #000; border: none; border-radius: 5px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); cursor: pointer; margin-top: 10px; box-shadow: 5px 5px 0 #fff; transition: 0.1s; }
-  button:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #fff; }
-  button:disabled { background: #555; color: #888; box-shadow: none; cursor: not-allowed; }
-  .success-msg { display: none; margin-top: 30px; padding: 20px; border: 2px dashed var(--neon-lime); background: rgba(204, 255, 0, 0.1); text-align: center; width: 100%; max-width: 400px; box-sizing: border-box; }
+  
+  button { width: 100%; max-width: 400px; padding: 18px; font-size: 28px; background: var(--neon-lime); color: #000; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: 900; font-style: italic; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); transition: 0.1s; }
+  button:active { transform: scale(0.98); }
+  button:disabled { background: #555; color: #888; }
+  
+  .success-msg { display: none; margin-top: 30px; padding: 25px; border: 2px dashed var(--neon-lime); background: rgba(204, 255, 0, 0.1); text-align: center; width: 100%; max-width: 400px; box-sizing: border-box; border-radius: 10px; }
 </style>
 </head>
 <body>
 
-  <h1>超 燃</h1>
+  <div class="room-tag" id="roomTag">Checking Room...</div>
+
+  <h1>超  燃</h1>
   <p>PLAYER REGISTRATION</p>
 
   <div class="form-group" onclick="document.getElementById('avatarInput').click()">
     <div class="avatar-upload" id="avatarPreviewBox">
-        <span class="avatar-text" id="avatarPlaceholder">+ PHOTO<br>(点击上传照片)</span>
+        <span class="avatar-text" id="avatarPlaceholder">+ PHOTO<br>点击上传</span>
         <img id="avatarImg">
     </div>
     <input type="file" id="avatarInput" accept="image/*" onchange="handleFile(this)">
-    <div style="text-align:center; color:#666; font-size:12px;">建议上传正方形头像 / Square Photo</div>
+  </div>
+
+  <!-- 如果 URL 没带 room，显示这个输入框 -->
+  <div class="form-group" id="roomInputGroup" style="display:none;">
+    <label>LICENSE KEY (授权码)</label>
+    <input type="text" id="roomInput" placeholder="例如: TEST-001">
   </div>
 
   <div class="form-group">
@@ -56,22 +65,32 @@
   <button id="submitBtn" onclick="submitToCloud()">SIGN UP!</button>
 
   <div id="successBox" class="success-msg">
-    <h2 style="font-family:'Permanent Marker'; color:var(--neon-lime); margin:0;">SUCCESS!</h2>
+    <h2 style="color:var(--neon-lime); margin:0;">SUCCESS!</h2>
     <p style="margin:10px 0;">报名成功 / REGISTERED</p>
-    <button onclick="location.reload()" style="font-size:16px; padding:10px; background:#fff; color:#000;">+ REGISTER ANOTHER</button>
+    <div style="font-size:12px; color:#aaa; margin-bottom:15px;">请等待主办方审核</div>
+    <button onclick="location.reload()" style="font-size:16px; padding:12px; background:#fff; color:#000;">+ REGISTER ANOTHER</button>
   </div>
 
 <script>
-  // ==================== ★★★ 配置区域 ★★★ ====================
+  // ========== ★★★ 配置区域 ★★★ ==========
   const SB_URL = "https://htqlaedczmaezrlqmwft.supabase.co"; 
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0cWxhZWRjem1hZXpybHFtd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNTQ2NzEsImV4cCI6MjA4NTkzMDY3MX0._LB75XfBc940vgnmx95ryZxWb-AZRJmuty8B1z_x08g";
-  // ============================================================
+  // ===============================================
 
-  const { createClient } = supabase;
-  const _supabase = (SB_URL !== "YOUR_SUPABASE_URL_HERE") ? createClient(SB_URL, SB_KEY) : null;
+  // 自动获取 URL 参数中的 room
+  const urlParams = new URLSearchParams(window.location.search);
+  let ROOM_ID = urlParams.get('room');
+
+  // 如果 URL 没有 room，显示输入框让用户自己填
+  if (ROOM_ID) {
+      document.getElementById('roomTag').innerText = "ROOM: " + ROOM_ID;
+  } else {
+      document.getElementById('roomTag').innerText = "NO ROOM";
+      document.getElementById('roomInputGroup').style.display = 'block';
+  }
+
   let compressedAvatar = null;
 
-  // 图片压缩处理
   function handleFile(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -80,19 +99,14 @@
             const img = new Image();
             img.src = e.target.result;
             img.onload = function() {
-                // 创建 Canvas 压缩图片
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                const maxWidth = 300; // 限制最大宽度300px，足够头像显示
+                const maxWidth = 300; 
                 const scale = maxWidth / img.width;
                 canvas.width = maxWidth;
                 canvas.height = img.height * scale;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // 转换为 Base64 (JPEG, 0.7质量)
                 compressedAvatar = canvas.toDataURL('image/jpeg', 0.7);
-                
-                // 预览
                 document.getElementById('avatarImg').src = compressedAvatar;
                 document.getElementById('avatarImg').style.display = 'block';
                 document.getElementById('avatarPlaceholder').style.display = 'none';
@@ -103,33 +117,53 @@
   }
 
   async function submitToCloud() {
+    // 如果没有 ROOM_ID，尝试从输入框获取
+    if (!ROOM_ID) {
+        ROOM_ID = document.getElementById('roomInput').value.trim().toUpperCase();
+    }
+
     const id = document.getElementById('pid').value.trim();
     const name = document.getElementById('pname').value.trim();
     const btn = document.getElementById('submitBtn');
 
-    if(!id || !name) { alert("PLEASE FILL ALL INFO!"); return; }
-    if (!_supabase) { alert("Supabase Not Configured!"); return; }
+    if(!ROOM_ID) { alert("请输入授权码 (LICENSE KEY)！"); return; }
+    if(!id || !name) { alert("请填写完整信息 (FILL ALL INFO)！"); return; }
+    if(SB_URL.includes("YOUR_SUPABASE")) { alert("Error: Config Missing!"); return; }
 
     btn.disabled = true;
     btn.innerText = "SENDING...";
 
+    const url = `${SB_URL}/rest/v1/registrations`;
+    const headers = {
+        "apikey": SB_KEY,
+        "Authorization": `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+    };
+    
+    const body = JSON.stringify({
+        room_id: ROOM_ID,
+        player_id: id,
+        player_name: name,
+        avatar: compressedAvatar,
+        processed: false
+    });
+
     try {
-        const { error } = await _supabase
-          .from('registrations')
-          .insert([{ 
-              player_id: id, 
-              player_name: name, 
-              avatar: compressedAvatar, // 上传压缩后的头像
-              processed: false 
-          }]);
-
-        if (error) throw error;
-
-        document.getElementById('successBox').style.display = 'block';
-        btn.style.display = 'none';
+        const response = await fetch(url, { method: 'POST', headers: headers, body: body });
+        
+        if (response.ok) {
+            document.getElementById('successBox').style.display = 'block';
+            btn.style.display = 'none';
+            // 锁定输入框防止修改
+            document.querySelectorAll('input').forEach(i => i.disabled = true);
+        } else {
+            const err = await response.json();
+            throw new Error(err.message || "Upload failed");
+        }
     } catch (error) {
-        console.error(error);
-        alert("Error: " + error.message);
+        console.error("Upload Error:", error);
+        alert("提交失败: " + error.message);
         btn.disabled = false;
         btn.innerText = "SIGN UP!";
     }
@@ -137,4 +171,3 @@
 </script>
 </body>
 </html>
-
