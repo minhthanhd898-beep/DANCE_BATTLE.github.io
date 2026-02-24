@@ -27,12 +27,13 @@
   .tab:hover { background: #444; color: #fff; }
   .tab.active { background: var(--cyan); color: #000; border-color: #fff; transform: skewX(-15deg) scale(1.1); box-shadow: 0 0 15px var(--cyan); }
   
-  .panel { display: none; padding: 30px; animation: fadeIn 0.5s; }
+  .panel { display: none; padding: 30px; animation: fadeIn 0.3s; }
   .panel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   
   .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
   .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
+  .btn:disabled { background: #333 !important; color: #777 !important; cursor: not-allowed; box-shadow: none; transform: none; }
   .btn-green { background: var(--lime); color: #000; }
   .btn-blue { background: var(--cyan); color: #000; }
   .btn-pink { background: var(--pink); color: #fff; }
@@ -132,7 +133,6 @@
         <button class="btn btn-dark" onclick="resetGameOnly()">重置比赛</button>
       </div>
     </div>
-    <p style="color:#666; font-size:12px;">* 点击“参加海选”将选手加入打分表。已参加的选手显示为绿色。</p>
     <table>
       <thead><tr><th>头像</th><th>号码</th><th>姓名</th><th>状态 / 操作</th><th>删除</th></tr></thead>
       <tbody id="playerListBody"></tbody>
@@ -257,7 +257,7 @@ function refreshUI(){
     renderScoreTable(null);
 }
 
-/* --- Player & Roster (MANUAL ADD MODE) --- */
+/* --- Player --- */
 function addPlayer(){ 
     appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); 
     renderPlayerManager(); 
@@ -269,8 +269,6 @@ function renderPlayerManager(){
   
   appData.players.forEach((p,i)=>{
     if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
-    
-    // Check if in audition
     const inAudition = appData.audition.results.some(r => r.id === p.id);
     const actionBtn = inAudition 
         ? `<button class="btn-small btn-green" disabled>✅ 已参赛</button>` 
@@ -289,65 +287,38 @@ function renderPlayerManager(){
 
 function updatePlayerInfo(idx, field, val) {
     appData.players[idx][field] = val;
-    // 如果该选手已在海选，同步更新海选信息
     const pid = appData.players[idx].id;
-    const audP = appData.audition.results.find(r => r.id === pid || r.name === appData.players[idx].name); // Try to match
-    if(audP) {
-        audP[field] = val;
-        renderScoreTable(null);
-    }
+    const audP = appData.audition.results.find(r => r.id === pid || r.name === appData.players[idx].name); 
+    if(audP) { audP[field] = val; renderScoreTable(null); }
     saveToCloud();
 }
 
 function addToAudition(playerIdx) {
     const p = appData.players[playerIdx];
     if(!p.id || !p.name) { alert("请先填写号码和姓名"); return; }
-    
-    // 查重
-    if(appData.audition.results.some(r => r.id === p.id)) {
-        alert("该选手已在海选列表中");
-        renderPlayerManager();
-        return;
-    }
-
-    // 加入海选列表
-    appData.audition.results.push({
-        id: p.id,
-        name: p.name,
-        avatar: p.avatar || DEFAULT_AVATAR,
-        scores: [],
-        avg: 0,
-        rank: 0
-    });
-    
-    saveToCloud();
-    renderPlayerManager();
-    renderScoreTable(null);
+    if(appData.audition.results.some(r => r.id === p.id)) { alert("已在海选列表"); renderPlayerManager(); return; }
+    appData.audition.results.push({ id: p.id, name: p.name, avatar: p.avatar || DEFAULT_AVATAR, scores: [], avg: 0, rank: 0 });
+    saveToCloud(); renderPlayerManager(); renderScoreTable(null);
 }
 
 function removeFromAudition(pid) {
-    if(appData.audition.finished) { alert("海选已锁定，无法移除"); return; }
-    if(!confirm("从海选列表中移除该选手？\n(选手库中保留)")) return;
-    
+    if(appData.audition.finished) { alert("已锁定"); return; }
+    if(!confirm("从海选移出？")) return;
     appData.audition.results = appData.audition.results.filter(r => r.id !== pid);
-    saveToCloud();
-    renderPlayerManager();
-    renderScoreTable(null);
+    saveToCloud(); renderPlayerManager(); renderScoreTable(null);
 }
 
 function removePlayer(i){ 
-    if(confirm('彻底删除该选手？(同时从海选移除)')) { 
+    if(confirm('删除选手？')) { 
         const pid = appData.players[i].id;
         appData.players.splice(i,1); 
-        // 同时也从海选中移除
         appData.audition.results = appData.audition.results.filter(r => r.id !== pid);
-        refreshUI(); 
-        saveToCloud(); 
+        refreshUI(); saveToCloud(); 
     } 
 }
 
 function resetGameOnly(){
-  if(confirm("【重置比赛】保留选手库，清空海选和对战？")){
+  if(confirm("【重置比赛】保留选手，清空对战？")){
     appData.audition = { finished:false, results:[] };
     appData.rounds = [];
     refreshUI(); saveToCloud();
@@ -361,20 +332,14 @@ function renderScoreTable(sortMode){
   const searchTerm = document.getElementById('searchAudition').value.toLowerCase();
   appData.judgeCount = judges;
   
-  // 增加一列操作列
   document.getElementById('scoreHeader').innerHTML = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>` + Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('') + `<th>操作</th>`;
   
-  // 计算
   appData.audition.results.forEach(p=>{
     let sum=0, c=0; 
-    for(let i=0;i<judges;i++){ 
-        let v=parseFloat(p.scores?.[i]); 
-        if(!isNaN(v)){ sum+=v; c++; }
-    }
+    for(let i=0;i<judges;i++){ let v=parseFloat(p.scores?.[i]); if(!isNaN(v)){ sum+=v; c++; } }
     p.avg = c>0 ? sum/c : 0;
   });
 
-  // 排序
   if(sortMode === 'score' || appData.audition.finished){
     appData.audition.results.sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
     appData.audition.results.forEach((p,i)=>p.rank=i+1);
@@ -385,10 +350,8 @@ function renderScoreTable(sortMode){
   const tb = document.getElementById('scoreBody'); tb.innerHTML='';
   appData.audition.results.forEach((p)=>{
     if(searchTerm && !p.id.toLowerCase().includes(searchTerm) && !p.name.toLowerCase().includes(searchTerm)) return;
-
     const isTop32 = p.rank>0 && p.rank<=32;
     const rankDisplay = (sortMode === 'id' && !appData.audition.finished) ? '-' : (p.rank||'-');
-    // 删除按钮 (锁定后隐藏)
     const removeBtn = appData.audition.finished ? '' : `<button class="btn-small btn-dark" onclick="removeFromAudition('${p.id}')">移出</button>`;
 
     tb.innerHTML += `<tr ${isTop32?'class="top-rank"':''}>
@@ -424,7 +387,7 @@ function exportAuditionPDF() {
 
 function finalizeAudition(){
   if(appData.audition.finished){ alert('Locked.'); return; }
-  renderScoreTable('score'); // Force sort by score
+  renderScoreTable('score'); 
   let top32 = appData.audition.results.slice(0,32);
   const currentCount = top32.length;
   if(currentCount < 32){
@@ -505,9 +468,11 @@ function refreshBattlePanels(){
 }
 function setWin(r,m,w){ appData.rounds[r].matches[m].winnerId = w; saveToCloud(); refreshBattlePanels(); }
 
-async function nextRound(idx){
+function nextRound(idx){
   if(idx===4)return;
   if(!confirm('生成下一轮？'))return;
+  
+  // 核心修复：乐观 UI 更新
   const cur = appData.rounds[idx].matches;
   const next = [];
   for(let i=0; i<cur.length; i+=2){
@@ -515,15 +480,22 @@ async function nextRound(idx){
     const w2 = getWinnerObj(cur[i+1]);
     next.push({ id:next.length+1, p1:w1, p2:w2, winnerId:null });
   }
+  
+  // 1. 本地立即更新
   appData.rounds[idx+1] = { matches:next };
+  
+  // 2. 自动判定 BYE
   appData.rounds[idx+1].matches.forEach(m=>{ 
       if(m.p1.isBye) m.winnerId=m.p2.id; 
       if(m.p2.isBye) m.winnerId=m.p1.id; 
   });
   
-  await saveToCloud(); 
-  refreshBattlePanels(); 
-  setTimeout(() => switchTab(idx+3), 50); 
+  // 3. 立即重绘界面
+  refreshBattlePanels();
+  switchTab(idx+3);
+  
+  // 4. 后台静默保存，不阻塞UI
+  saveToCloud(); 
 }
 
 function getWinnerObj(m) {
@@ -533,7 +505,7 @@ function getWinnerObj(m) {
     return {id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true};
 }
 
-/* --- Display --- */
+/* --- VS & Ceremony --- */
 function openVS(rIdx, mIdx){
   const m = appData.rounds[rIdx].matches[mIdx];
   const p1 = m.p1, p2 = m.p2;
