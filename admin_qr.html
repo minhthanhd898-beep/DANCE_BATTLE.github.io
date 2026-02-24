@@ -22,7 +22,6 @@
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
   h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
   
-  /* Tabs */
   .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
   .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition:0.3s; }
   .tab:hover { background: #444; color: #fff; }
@@ -32,7 +31,6 @@
   .panel.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   
-  /* Buttons */
   .btn { font-family: 'Black Ops One'; border: none; padding: 8px 20px; margin: 5px; cursor: pointer; transform: skewX(-10deg); transition: 0.2s; }
   .btn:hover { transform: skewX(-10deg) translate(-2px,-2px); box-shadow: 4px 4px 0 #000; }
   .btn-green { background: var(--lime); color: #000; }
@@ -43,12 +41,8 @@
   
   input { background: transparent; border: 1px solid #555; color: #fff; padding: 5px; text-align: center; font-family: 'Black Ops One'; font-size: 18px; }
   .status-bar { background: #000; border: 2px solid #444; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;}
-  
-  /* Search Box */
   .search-input { width: 180px; border-bottom: 2px solid var(--lime); font-size: 16px; text-align: left; padding-left: 10px; color: var(--lime); }
-  .search-input::placeholder { color: #555; font-family: sans-serif; }
-
-  /* Table */
+  
   table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
   th { color: #888; font-size: 14px; border-bottom: 2px solid #333; padding: 6px; }
   td { background: #111; padding: 6px; border-top: 1px solid #222; border-bottom: 1px solid #222; vertical-align: middle; text-align: center; }
@@ -115,8 +109,8 @@
   </header>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">选手库</div>
-    <div class="tab" onclick="switchTab(1)">海选</div>
+    <div class="tab active" onclick="switchTab(0)">选手库 (ROSTER)</div>
+    <div class="tab" onclick="switchTab(1)">海选 (AUDITION)</div>
     <div class="tab" onclick="switchTab(2)">32强</div>
     <div class="tab" onclick="switchTab(3)">16强</div>
     <div class="tab" onclick="switchTab(4)">8强</div>
@@ -128,8 +122,8 @@
   <div class="panel active" id="panel0">
     <div class="status-bar">
       <div>
-        <input id="searchPlayer" class="search-input" placeholder="搜索..." oninput="renderPlayerManager()">
-        <span style="margin-left:10px;">Total: <b id="totalCount">0</b></span>
+        <input id="searchPlayer" class="search-input" placeholder="搜索选手库..." oninput="renderPlayerManager()">
+        <span style="margin-left:10px;">总人数: <b id="totalCount">0</b></span>
       </div>
       <div>
         <button class="btn btn-green" onclick="syncRegistration()">接收报名</button>
@@ -138,8 +132,9 @@
         <button class="btn btn-dark" onclick="resetGameOnly()">重置比赛</button>
       </div>
     </div>
+    <p style="color:#666; font-size:12px;">* 点击“参加海选”将选手加入打分表。已参加的选手显示为绿色。</p>
     <table>
-      <thead><tr><th>头像</th><th>号码</th><th>姓名</th><th>操作</th></tr></thead>
+      <thead><tr><th>头像</th><th>号码</th><th>姓名</th><th>状态 / 操作</th><th>删除</th></tr></thead>
       <tbody id="playerListBody"></tbody>
     </table>
   </div>
@@ -148,19 +143,17 @@
   <div class="panel" id="panel1">
     <div class="status-bar">
       <div>
-        <!-- 🟢 新增海选搜索框 -->
         <input id="searchAudition" class="search-input" placeholder="输入选手..." oninput="renderScoreTable(null)">
-        <span style="margin-left:10px;">裁判数：<input type="number" id="judgeCount" value="3" min="1" max="5" style="width:40px" onchange="renderScoreTable(null)"></span>
+        <span style="margin-left:10px;">裁判数：<input type="number" id="judgeCount" value="3" min="1" max="5" style="width:40px" onchange="renderScoreTable(true)"></span>
       </div>
       <div>
-        <!-- 🟢 新增排序按钮 -->
         <button class="btn btn-dark" onclick="renderScoreTable('id')">按号码排序</button>
         <button class="btn btn-blue" onclick="renderScoreTable('score')">刷新排名</button>
         <button class="btn btn-pink" onclick="exportAuditionPDF()">导出成绩单</button>
         <button class="btn btn-green" onclick="finalizeAudition()">锁定并晋级 >></button>
       </div>
     </div>
-    <p style="color:#666; font-size:12px;">* 点击“刷新排名”查看当前名次。前32名晋级，不足32人自动补 BYE。</p>
+    <p style="color:#666; font-size:12px;">* 本列表仅显示从选手库手动加入的选手。不足32人自动补 BYE。</p>
     <table>
       <thead><tr id="scoreHeader"></tr></thead>
       <tbody id="scoreBody"></tbody>
@@ -170,6 +163,7 @@
   <div id="battlePanels"></div>
 </div>
 
+<!-- 弹窗 -->
 <div id="vsScreen">
   <div class="vs-side left"><img id="vsAvatar1" class="vs-avatar-big"><div id="vsName1" class="vs-name-big"></div><div id="vsId1" class="vs-id-big"></div></div>
   <div class="vs-center-logo">VS</div>
@@ -260,38 +254,100 @@ async function syncRegistration(){
 }
 function refreshUI(){ 
     renderPlayerManager(); 
-    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(null); }
+    renderScoreTable(null);
 }
 
-/* --- Player --- */
+/* --- Player & Roster (MANUAL ADD MODE) --- */
 function addPlayer(){ 
     appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); 
     renderPlayerManager(); 
-    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(null); }
     saveToCloud(); 
 }
 function renderPlayerManager(){
   const term = document.getElementById('searchPlayer').value.toLowerCase();
   const tb = document.getElementById('playerListBody'); tb.innerHTML='';
+  
   appData.players.forEach((p,i)=>{
     if(term && !p.id.toLowerCase().includes(term) && !p.name.toLowerCase().includes(term)) return;
-    tb.innerHTML += `<tr><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td>
-    <td><input value="${p.id}" oninput="updatePlayerInfo(${i}, 'id', this.value)"></td>
-    <td><input style="text-align:left;" value="${p.name}" oninput="updatePlayerInfo(${i}, 'name', this.value)"></td>
-    <td><button class="btn-small btn-dark" onclick="removePlayer(${i})">删</button></td></tr>`;
+    
+    // Check if in audition
+    const inAudition = appData.audition.results.some(r => r.id === p.id);
+    const actionBtn = inAudition 
+        ? `<button class="btn-small btn-green" disabled>✅ 已参赛</button>` 
+        : `<button class="btn-small btn-blue" onclick="addToAudition(${i})">➕ 参加海选</button>`;
+
+    tb.innerHTML += `<tr>
+        <td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td>
+        <td><input value="${p.id}" oninput="updatePlayerInfo(${i}, 'id', this.value)"></td>
+        <td><input style="text-align:left;" value="${p.name}" oninput="updatePlayerInfo(${i}, 'name', this.value)"></td>
+        <td>${actionBtn}</td>
+        <td><button class="btn-small btn-dark" onclick="removePlayer(${i})">🗑️</button></td>
+    </tr>`;
   });
   document.getElementById('totalCount').innerText = appData.players.length;
 }
+
 function updatePlayerInfo(idx, field, val) {
     appData.players[idx][field] = val;
-    if(!appData.audition.finished) { syncAuditionList(); renderScoreTable(null); }
+    // 如果该选手已在海选，同步更新海选信息
+    const pid = appData.players[idx].id;
+    const audP = appData.audition.results.find(r => r.id === pid || r.name === appData.players[idx].name); // Try to match
+    if(audP) {
+        audP[field] = val;
+        renderScoreTable(null);
+    }
     saveToCloud();
 }
-function removePlayer(i){ 
-    if(confirm('删?')) { appData.players.splice(i,1); refreshUI(); saveToCloud(); } 
+
+function addToAudition(playerIdx) {
+    const p = appData.players[playerIdx];
+    if(!p.id || !p.name) { alert("请先填写号码和姓名"); return; }
+    
+    // 查重
+    if(appData.audition.results.some(r => r.id === p.id)) {
+        alert("该选手已在海选列表中");
+        renderPlayerManager();
+        return;
+    }
+
+    // 加入海选列表
+    appData.audition.results.push({
+        id: p.id,
+        name: p.name,
+        avatar: p.avatar || DEFAULT_AVATAR,
+        scores: [],
+        avg: 0,
+        rank: 0
+    });
+    
+    saveToCloud();
+    renderPlayerManager();
+    renderScoreTable(null);
 }
+
+function removeFromAudition(pid) {
+    if(appData.audition.finished) { alert("海选已锁定，无法移除"); return; }
+    if(!confirm("从海选列表中移除该选手？\n(选手库中保留)")) return;
+    
+    appData.audition.results = appData.audition.results.filter(r => r.id !== pid);
+    saveToCloud();
+    renderPlayerManager();
+    renderScoreTable(null);
+}
+
+function removePlayer(i){ 
+    if(confirm('彻底删除该选手？(同时从海选移除)')) { 
+        const pid = appData.players[i].id;
+        appData.players.splice(i,1); 
+        // 同时也从海选中移除
+        appData.audition.results = appData.audition.results.filter(r => r.id !== pid);
+        refreshUI(); 
+        saveToCloud(); 
+    } 
+}
+
 function resetGameOnly(){
-  if(confirm("【重置比赛】保留选手，清空比赛？")){
+  if(confirm("【重置比赛】保留选手库，清空海选和对战？")){
     appData.audition = { finished:false, results:[] };
     appData.rounds = [];
     refreshUI(); saveToCloud();
@@ -299,29 +355,16 @@ function resetGameOnly(){
 }
 
 /* --- Audition --- */
-function syncAuditionList(){
-  if(appData.audition.finished) return;
-  const scoreMap = {};
-  appData.audition.results.forEach(r => scoreMap[r.id] = r.scores || []);
-  appData.audition.results = appData.players.map(p => ({
-    id: p.id,
-    name: p.name,
-    avatar: p.avatar||DEFAULT_AVATAR,
-    scores: scoreMap[p.id] || [],
-    avg: 0,
-    rank: 0
-  }));
-}
-
-// 🟢 核心修改：支持排序模式
 function renderScoreTable(sortMode){
   ensureStructures();
   const judges = parseInt(document.getElementById('judgeCount').value) || 3;
   const searchTerm = document.getElementById('searchAudition').value.toLowerCase();
   appData.judgeCount = judges;
-  document.getElementById('scoreHeader').innerHTML = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>` + Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('');
   
-  // 计算平均分
+  // 增加一列操作列
+  document.getElementById('scoreHeader').innerHTML = `<th>头像</th><th>排名</th><th>号码</th><th>姓名</th><th>平均分</th>` + Array(judges).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('') + `<th>操作</th>`;
+  
+  // 计算
   appData.audition.results.forEach(p=>{
     let sum=0, c=0; 
     for(let i=0;i<judges;i++){ 
@@ -331,26 +374,32 @@ function renderScoreTable(sortMode){
     p.avg = c>0 ? sum/c : 0;
   });
 
-  // 排序逻辑
+  // 排序
   if(sortMode === 'score' || appData.audition.finished){
-    // 按分数倒序
     appData.audition.results.sort((a,b)=>b.avg-a.avg || a.id.localeCompare(b.id));
     appData.audition.results.forEach((p,i)=>p.rank=i+1);
   } else if (sortMode === 'id') {
-    // 按号码正序 (numeric: true 确保 2 < 10)
     appData.audition.results.sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric: true}));
   }
   
   const tb = document.getElementById('scoreBody'); tb.innerHTML='';
   appData.audition.results.forEach((p)=>{
-    // 搜索过滤
     if(searchTerm && !p.id.toLowerCase().includes(searchTerm) && !p.name.toLowerCase().includes(searchTerm)) return;
 
     const isTop32 = p.rank>0 && p.rank<=32;
-    // 如果是按号码排序，为了避免混淆，不显示 Rank 列的具体数字（因为是乱的）
     const rankDisplay = (sortMode === 'id' && !appData.audition.finished) ? '-' : (p.rank||'-');
-    
-    tb.innerHTML += `<tr ${isTop32?'class="top-rank"':''}><td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td><td class="rank-num">${rankDisplay}</td><td>${p.id}</td><td style="text-align:left;">${p.name}</td><td style="color:${isTop32?'var(--cyan)':'var(--pink)'};font-weight:bold;">${p.avg.toFixed(2)}</td>${Array(judges).fill(0).map((_,j)=>`<td><input type="number" step="0.1" value="${p.scores?.[j]??''}" ${appData.audition.finished?'disabled':''} oninput="onScoreInput('${p.id}',${j},this.value)"></td>`).join('')}</tr>`;
+    // 删除按钮 (锁定后隐藏)
+    const removeBtn = appData.audition.finished ? '' : `<button class="btn-small btn-dark" onclick="removeFromAudition('${p.id}')">移出</button>`;
+
+    tb.innerHTML += `<tr ${isTop32?'class="top-rank"':''}>
+        <td><img src="${p.avatar||DEFAULT_AVATAR}" class="avatar-sm"></td>
+        <td class="rank-num">${rankDisplay}</td>
+        <td>${p.id}</td>
+        <td style="text-align:left;">${p.name}</td>
+        <td style="color:${isTop32?'var(--cyan)':'var(--pink)'};font-weight:bold;">${p.avg.toFixed(2)}</td>
+        ${Array(judges).fill(0).map((_,j)=>`<td><input type="number" step="0.1" value="${p.scores?.[j]??''}" ${appData.audition.finished?'disabled':''} oninput="onScoreInput('${p.id}',${j},this.value)"></td>`).join('')}
+        <td>${removeBtn}</td>
+    </tr>`;
   });
 }
 
@@ -369,13 +418,13 @@ function exportAuditionPDF() {
         const scores = Array(judges).fill(0).map((_,j) => `<td style="border:1px solid #ccc; padding:5px;">${p.scores[j] || '-'}</td>`).join('');
         return `<tr style="${bg}"><td style="border:1px solid #ccc; padding:5px;">${i+1}</td><td style="border:1px solid #ccc; padding:5px;">${p.id}</td><td style="border:1px solid #ccc; padding:5px; text-align:left;">${p.name}</td>${scores}<td style="border:1px solid #ccc; padding:5px;">${Number(p.avg).toFixed(2)}</td><td style="border:1px solid #ccc; padding:5px; color:${isPromoted?'green':'#999'}">${status}</td></tr>`;
     }).join('');
-    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">超燃 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const html = `<html><head><title>AUDITION REPORT</title></head><body style="font-family: sans-serif; padding: 20px;"><h1 style="text-align:center;">STREET WARS 2025 - AUDITION RANKING</h1><table style="width:100%; border-collapse: collapse; text-align: center; font-size: 12px;"><thead><tr style="background:#f0f0f0;"><th style="border:1px solid #ccc; padding:8px;">RANK</th><th style="border:1px solid #ccc; padding:8px;">ID</th><th style="border:1px solid #ccc; padding:8px;">NAME</th><th colspan="${judges}" style="border:1px solid #ccc; padding:8px;">SCORES (J1-J${judges})</th><th style="border:1px solid #ccc; padding:8px;">AVG</th><th style="border:1px solid #ccc; padding:8px;">STATUS</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const win = window.open('', '_blank'); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 500);
 }
 
 function finalizeAudition(){
   if(appData.audition.finished){ alert('Locked.'); return; }
-  renderScoreTable('score'); // 强制按分数排序
+  renderScoreTable('score'); // Force sort by score
   let top32 = appData.audition.results.slice(0,32);
   const currentCount = top32.length;
   if(currentCount < 32){
@@ -484,7 +533,7 @@ function getWinnerObj(m) {
     return {id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true};
 }
 
-/* ============= VS & Ceremony ============= */
+/* --- Display --- */
 function openVS(rIdx, mIdx){
   const m = appData.rounds[rIdx].matches[mIdx];
   const p1 = m.p1, p2 = m.p2;
@@ -538,4 +587,3 @@ function clearAll(){ if(confirm('RESET ALL?')){appData={players:[],audition:{fin
 </script>
 </body>
 </html>
-
