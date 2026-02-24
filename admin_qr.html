@@ -23,14 +23,13 @@
   .login-box { width: 300px; padding: 40px; border: 4px solid var(--lime); text-align: center; }
   .login-input { width: 100%; padding: 15px; font-size: 24px; text-align: center; background: #111; border: 2px solid #555; color: var(--lime); font-family: 'Black Ops One'; margin-bottom: 20px; text-transform: uppercase; }
 
-  /* 主容器 (默认隐藏) */
-  #appContainer { display: none; max-width: 1300px; margin: 0 auto; background: rgba(20,20,20,0.95); border: 4px solid #fff; box-shadow: 10px 10px 0 #000; padding: 10px; min-height: 800px; }
-  
+  .container { max-width: 1300px; margin: 0 auto; background: rgba(20,20,20,0.95); border: 4px solid #fff; box-shadow: 10px 10px 0 #000; padding: 10px; min-height: 800px; }
   header { text-align: center; padding: 30px; border-bottom: 3px dashed var(--pink); }
   h1 { font-family: 'Rubik Glitch', cursive; font-size: 50px; margin: 0; text-shadow: 4px 4px 0 var(--pink); }
   
   .tabs { display: flex; justify-content: center; gap: 15px; padding: 20px; border-bottom: 5px solid var(--cyan); }
   .tab { font-family: 'Black Ops One'; font-size: 16px; padding: 8px 15px; cursor: pointer; background: #222; border: 2px solid #555; transform: skewX(-15deg); transition:0.3s; }
+  .tab:hover { background: #444; color: #fff; }
   .tab.active { background: var(--cyan); color: #000; border-color: #fff; transform: skewX(-15deg) scale(1.1); box-shadow: 0 0 15px var(--cyan); }
   
   .panel { display: none; padding: 30px; animation: fadeIn 0.3s; }
@@ -68,7 +67,6 @@
   .fighter.loser { opacity:0.3; filter:grayscale(1); }
   .vs-tag { font-family:'Rubik Glitch'; font-size:32px; color:var(--pink); margin:0 10px; }
 
-  /* Popups */
   #vsScreen, #ceremonyScreen, #qrModal { display: none; position: fixed; inset: 0; background: #000; z-index: 9999; }
   
   /* VS Screen */
@@ -121,7 +119,7 @@
   </div>
 </div>
 
-<div class="container" id="appContainer">
+<div class="container" id="appContainer" style="display:none;">
   <header>
     <h1>STREET WARS 2025</h1>
     <p style="font-family:'Black Ops One'; color:var(--yellow);">ROOM: <span id="roomDisplay">...</span></p>
@@ -227,8 +225,11 @@ function initApp() {
     renderPlayerManager();
     renderScoreTable(null);
     refreshBattlePanels();
-    // 监听本房间报名
-    sb.channel('public:registrations').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `room_id=eq.${CURRENT_ROOM}` }, () => syncRegistration()).subscribe();
+    // 监听本房间的报名
+    sb.channel('public:registrations')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations', filter: `room_id=eq.${CURRENT_ROOM}` }, 
+      () => syncRegistration())
+      .subscribe();
 }
 
 // 2. Cloud
@@ -253,8 +254,8 @@ async function syncRegistration(){
 }
 
 /* --- Logic --- */
-function ensureStructures(){ if(!appData.players) appData.players=[]; if(!appData.audition) appData.audition={finished:false,results:[]}; if(!Array.isArray(appData.audition.results)) appData.audition.results=[]; if(!Array.isArray(appData.rounds)) appData.rounds=[]; }
-function refreshUI(){ renderPlayerManager(); if(!appData.audition.finished){ syncAuditionList(); renderScoreTable(null); } }
+function ensureStructures(){ if(!appData.players) appData.players=[]; if(!appData.audition) appData.audition={finished:false,results:[]}; if(!Array.isArray(appData.audition.results)) appData.audition.results=[]; if(!Array.isArray(appData.rounds)) { appData.rounds=[]; for(let i=0;i<5;i++) appData.rounds[i]={matches:[]}; } }
+function refreshUI(){ renderPlayerManager(); if(!appData.audition.finished){ renderScoreTable(null); } }
 
 function addPlayer(){ appData.players.push({id:'',name:'',avatar:DEFAULT_AVATAR}); refreshUI(); saveToCloud(); }
 function renderPlayerManager(){
@@ -268,12 +269,11 @@ function renderPlayerManager(){
     });
     document.getElementById('totalCount').innerText=appData.players.length;
 }
-function updP(i,f,v){ appData.players[i][f]=v; if(!appData.audition.finished){syncAuditionList();renderScoreTable(null);} saveToCloud(); }
+function updP(i,f,v){ appData.players[i][f]=v; if(!appData.audition.finished){renderScoreTable(null);} saveToCloud(); }
 function addToAud(i){ const p=appData.players[i]; if(!p.id)return; if(appData.audition.results.some(r=>r.id===p.id))return; appData.audition.results.push({id:p.id,name:p.name,avatar:p.avatar,scores:[],avg:0,rank:0}); saveToCloud(); refreshUI(); }
 function delP(i){ if(confirm('Del?')){ const pid=appData.players[i].id; appData.players.splice(i,1); appData.audition.results=appData.audition.results.filter(r=>r.id!==pid); refreshUI(); saveToCloud(); }}
-function resetGameOnly(){ if(confirm("保留选手重置比赛?")){ appData.audition={finished:false,results:[]}; appData.rounds=[]; refreshUI(); saveToCloud(); } }
+function resetGameOnly(){ if(confirm("保留选手重置比赛?")){ appData.audition={finished:false,results:[]}; appData.rounds=[]; for(let i=0;i<5;i++) appData.rounds[i]={matches:[]}; refreshUI(); saveToCloud(); } }
 
-function syncAuditionList(){ /* Manual mode: do nothing */ }
 function renderScoreTable(mode){
     const j=parseInt(document.getElementById('judgeCount').value)||3; appData.judgeCount=j;
     document.getElementById('scoreHeader').innerHTML=`<th>头像</th><th>Rank</th><th>No.</th><th>Name</th><th>Avg</th>`+Array(j).fill(0).map((_,i)=>`<th>J${i+1}</th>`).join('')+`<th>Op</th>`;
@@ -294,46 +294,75 @@ function renderScoreTable(mode){
 function scIn(id,k,v){ const p=appData.audition.results.find(x=>x.id===id); if(p){ if(!p.scores)p.scores=[]; p.scores[k]=v; saveToCloud(); } }
 function rmAud(id){ if(appData.audition.finished)return; appData.audition.results=appData.audition.results.filter(r=>r.id!==id); refreshUI(); saveToCloud(); }
 
+// 修复版 finalizeAudition：处理BYE
 function finalizeAudition(){
   if(appData.audition.finished){alert('Locked');return;}
-  renderScoreTable('score'); let top32=appData.audition.results.slice(0,32);
-  if(top32.length<32){ if(!confirm('补BYE?'))return; for(let i=0;i<32-top32.length;i++)top32.push({id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:0}); } else if(!confirm('Lock?'))return;
-  appData.audition.finished=true; appData.audition.results=top32;
+  renderScoreTable('score'); 
+  let top32=appData.audition.results.slice(0,32);
+  
+  if(top32.length<32){ 
+      if(!confirm('补BYE?'))return; 
+      const n=32-top32.length; 
+      for(let i=0;i<n;i++) top32.push({id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true,scores:[],avg:-1,rank:999}); 
+  } else if(!confirm('Lock?'))return;
+  
+  appData.audition.finished=true; 
+  appData.audition.results=top32;
   const seed=[[1,32],[16,17],[9,24],[8,25],[5,28],[12,21],[13,20],[4,29],[3,30],[14,19],[11,22],[6,27],[7,26],[10,23],[15,18],[2,31]];
-  appData.rounds[0]={matches:seed.map((p,i)=>({id:i+1,p1:top32[p[0]-1],p2:top32[p[1]-1],winnerId:null}))};
-  appData.rounds[0].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
+  const matches = seed.map((p,i)=>({id:i+1,p1:top32[p[0]-1],p2:top32[p[1]-1],winnerId:null}));
+  appData.rounds = []; 
+  for(let i=0;i<5;i++) appData.rounds[i] = { matches: [] }; // 初始化所有轮次
+  appData.rounds[0] = { matches };
+
+  // 处理第一轮BYE
+  appData.rounds[0].matches.forEach(m=>{
+      const p1Bye = m.p1.id==='BYE'||m.p1.isBye;
+      const p2Bye = m.p2.id==='BYE'||m.p2.isBye;
+      if(p1Bye && !p2Bye) m.winnerId=m.p2.id;
+      if(p2Bye && !p1Bye) m.winnerId=m.p1.id;
+  });
+  
   saveToCloud(); refreshBattlePanels(); switchTab(2);
 }
 
 function createBattlePanels(){ document.getElementById('battlePanels').innerHTML=ROUND_CONFIG.map(c=>`<div class="panel" id="panel${c.tabId}"><div class="status-bar"><div>${c.name}</div><div><button class="btn btn-green" id="nb${c.idx}" onclick="nextR(${c.idx})">Next</button>${c.idx===4?'<button class="btn btn-pink" onclick="showC()">🏆</button>':''}</div></div><div class="battle-container" id="bb${c.idx}"></div></div>`).join(''); }
-function refreshBattlePanels(){ ROUND_CONFIG.forEach(c=>{ const r=appData.rounds[c.idx], b=document.getElementById('bb'+c.idx), btn=document.getElementById('nb'+c.idx); if(!b)return; b.innerHTML=''; if(!r||!r.matches){if(btn)btn.disabled=true;return;} const d=r.matches.every(m=>m.winnerId); if(btn){btn.disabled=!d;if(c.idx===4)btn.style.display='none';} r.matches.forEach((m,i)=>{ const w1=m.winnerId===m.p1.id, w2=m.winnerId===m.p2.id, lk=!!appData.rounds[c.idx+1]; const c1=lk?'':`onclick="setW(${c.idx},${i},'${m.p1.id}')"`, c2=lk?'':`onclick="setW(${c.idx},${i},'${m.p2.id}')"`; b.innerHTML+=`<div class="match-card"><div class="match-tools"><button class="btn-small btn-dark" onclick="vs('${m.p1.name}','${m.p1.id}','${m.p1.avatar}','${m.p2.name}','${m.p2.id}','${m.p2.avatar}')">VS</button></div><div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${c1}><img src="${m.p1.avatar}"><div>${m.p1.name}</div></div><div class="vs-tag">VS</div><div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${c2}><img src="${m.p2.avatar}"><div>${m.p2.name}</div></div></div>`; }); }); }
+function refreshBattlePanels(){ ROUND_CONFIG.forEach(c=>{ const r=appData.rounds[c.idx], b=document.getElementById('bb'+c.idx), btn=document.getElementById('nb'+c.idx); if(!b)return; b.innerHTML=''; if(!r||!r.matches){if(btn)btn.disabled=true;return;} const d=r.matches.every(m=>m.winnerId); if(btn){btn.disabled=!d;if(c.idx===4)btn.style.display='none';} r.matches.forEach((m,i)=>{ const w1=m.winnerId===m.p1.id, w2=m.winnerId===m.p2.id, lk=!!(appData.rounds[c.idx+1] && appData.rounds[c.idx+1].matches.length>0); const c1=lk?'':`onclick="setW(${c.idx},${i},'${m.p1.id}')"`, c2=lk?'':`onclick="setW(${c.idx},${i},'${m.p2.id}')"`; b.innerHTML+=`<div class="match-card"><div class="match-tools"><button class="btn-small btn-dark" onclick="vs('${m.p1.name}','${m.p1.id}','${m.p1.avatar}','${m.p2.name}','${m.p2.id}','${m.p2.avatar}')">VS</button></div><div class="fighter ${w1?'winner':(m.winnerId?'loser':'')}" ${c1}><img src="${m.p1.avatar}"><div>${m.p1.name}</div></div><div class="vs-tag">VS</div><div class="fighter ${w2?'winner':(m.winnerId?'loser':'')}" ${c2}><img src="${m.p2.avatar}"><div>${m.p2.name}</div></div></div>`; }); }); }
 function setW(r,m,w){ appData.rounds[r].matches[m].winnerId=w; saveToCloud(); refreshBattlePanels(); }
 
-// 🟢 极速版晋级逻辑 (Optimistic UI)
+// 修复版 Next Round
 async function nextR(i){
-  if(i===4)return; if(!confirm('Next?'))return;
+  if(i===4)return; 
+  const curRound = appData.rounds[i];
+  if(!curRound || !curRound.matches.every(m=>m.winnerId)){ alert('请先选出所有胜者'); return; }
+  if(!confirm('Next?'))return;
   
-  // 1. 本地立即计算
-  const cur=appData.rounds[i].matches, next=[];
+  const cur=curRound.matches, next=[];
   for(let k=0;k<cur.length;k+=2){
     const w1=getW(cur[k]), w2=getW(cur[k+1]);
     next.push({id:next.length+1,p1:w1,p2:w2,winnerId:null});
   }
-  appData.rounds[i+1]={matches:next}; 
-  appData.rounds[i+1].matches.forEach(m=>{if(m.p1.isBye)m.winnerId=m.p2.id;if(m.p2.isBye)m.winnerId=m.p1.id});
   
-  // 2. 立即渲染跳转
+  // 1. 本地更新
+  appData.rounds[i+1]={matches:next};
+  appData.rounds[i+1].matches.forEach(m=>{
+      const p1Bye = m.p1.id==='BYE'||m.p1.isBye;
+      const p2Bye = m.p2.id==='BYE'||m.p2.isBye;
+      if(p1Bye && !p2Bye) m.winnerId=m.p2.id;
+      if(p2Bye && !p1Bye) m.winnerId=m.p1.id;
+  });
+  
+  // 2. 立即刷新
   refreshBattlePanels();
   switchTab(i+3);
   
   // 3. 后台保存
   await saveToCloud();
 }
-function getW(m){ if(!m) return {id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true}; return m.winnerId===m.p1.id?m.p1:m.p2; }
+function getW(m){ if(!m) return {id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true}; if(m.winnerId===m.p1.id)return m.p1; if(m.winnerId===m.p2.id)return m.p2; return {id:'BYE',name:'BYE',avatar:DEFAULT_AVATAR,isBye:true}; }
 
 // Utils
 function vs(n1,i1,a1,n2,i2,a2){ document.getElementById('vsName1').innerText=n1;document.getElementById('vsId1').innerText=i1;document.getElementById('vsAvatar1').src=a1; document.getElementById('vsName2').innerText=n2;document.getElementById('vsId2').innerText=i2;document.getElementById('vsAvatar2').src=a2; document.getElementById('vsScreen').style.display='flex'; }
-function showC(){ const fr=appData.rounds[4]; if(!fr||!fr.matches[0].winnerId){alert('No Winner');return;} const m=fr.matches[0], ch=m.winnerId===m.p1.id?m.p1:m.p2, ru=m.winnerId===m.p1.id?m.p2:m.p1; const sr=appData.rounds[3], th=[]; if(sr)sr.matches.forEach(s=>{if(s.winnerId){const l=s.winnerId===s.p1.id?s.p2:s.p1; if(l&&l.id!=='BYE')th.push(l)}}); const b=document.getElementById('podiumContent'); b.innerHTML=''; b.innerHTML+=mkPod(ru,'second','2ND',0.2); b.innerHTML+=mkPod(ch,'first','WINNER',0.6); th.forEach(t=>b.innerHTML+=mkPod(t,'third','3RD',0.4)); document.getElementById('ceremonyScreen').style.display='flex'; setTimeout(()=>confetti({particleCount:150,spread:100,origin:{y:0.6}}),100); }
+function showC(){ const fr=appData.rounds[4]; if(!fr||!fr.matches[0].winnerId){alert('No Winner');return;} const m=fr.matches[0], ch=m.winnerId===m.p1.id?m.p1:m.p2, ru=m.winnerId===m.p1.id?m.p2:m.p1; const sr=appData.rounds[3], th=[]; if(sr)sr.matches.forEach(s=>{if(s.winnerId){const l=s.winnerId===s.p1.id?s.p2:s.p1; if(l&&l.id!=='BYE')th.push(l)}}); const b=document.getElementById('podiumContent'); b.innerHTML=mkPod(ru,'second','2ND',0.2)+mkPod(ch,'first','WINNER',0.6); th.forEach(t=>b.innerHTML+=mkPod(t,'third','3RD',0.4)); document.getElementById('ceremonyScreen').style.display='flex'; setTimeout(()=>confetti({particleCount:150,spread:100,origin:{y:0.6}}),100); }
 function mkPod(p,c,l,d){ return `<div class="rank-col ${c} animate-rise" style="animation-delay:${d}s"><div class="avatar-box"><img src="${p.avatar||DEFAULT_AVATAR}"></div><div class="info-box"><div class="p-name">${p.name}</div><div class="p-id">#${p.id}</div><div class="p-rank">${l}</div></div></div>`; }
 function switchTab(n){ document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n)); document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n)); }
 function showQR(){ if(!CURRENT_ROOM)return; const u=prompt("Register URL:", window.location.href.replace('admin_qr.html','register.html')+`?room=${CURRENT_ROOM}`); if(u){ document.getElementById('qrcode').innerHTML=""; new QRCode(document.getElementById('qrcode'),{text:u,width:256,height:256}); document.getElementById('qrModal').style.display='flex'; } }
